@@ -8,7 +8,11 @@
 # LICENSE.txt file in the root directory of this source tree.
 #
 #########################################################################
-from urllib.parse import urljoin
+try:
+    from urllib.parse import urljoin
+except:
+    from urlparse import urljoin
+
 from geoserver.support import ResourceInfo, bbox, write_bbox, write_string, xml_property, build_url
 
 try:
