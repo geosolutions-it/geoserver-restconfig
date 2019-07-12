@@ -944,11 +944,16 @@ class Catalog(object):
 
     def get_layers(self, resource=None):
         if isinstance(resource, basestring):
+            ws_name = None
             if self.get_short_version() >= "2.13":
                 if ":" in resource:
                     ws_name, resource = resource.split(':')
 
-            resource = self.get_resources(names=resource)[0]
+            if ws_name:
+                resources = self.get_resources(names=resource, workspaces=[ws_name])
+            else:
+                resources = self.get_resources(names=resource)
+            resource = self._return_first_item(resources)
         layers_url = "{}/layers.xml".format(self.service_url)
         data = self.get_xml(layers_url)
         lyrs = [Layer(self, l.find("name").text) for l in data.findall("layer")]
