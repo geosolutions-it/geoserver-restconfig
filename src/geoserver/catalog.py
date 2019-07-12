@@ -276,7 +276,6 @@ class Catalog(object):
         href = urlparse(obj.href)
         netloc = urlparse(self.service_url).netloc
         rest_url = href._replace(netloc=netloc).geturl()
-        # rest_url = obj.href
         data = obj.message()
 
         headers = {
@@ -345,7 +344,6 @@ class Catalog(object):
           Will return None if no store is found.
           Will raise an error if more than one store with the same name is found.
         '''
-
         stores = self.get_stores(workspaces=[workspace], names=name)
         return self._return_first_item(stores)
 
@@ -886,20 +884,21 @@ class Catalog(object):
         Will always return an array.
         '''
         if not stores:
-            stores = self.get_stores(
-                names=names,
+            _stores = self.get_stores(
                 workspaces=workspaces
             )
+        elif not isinstance(stores, list):
+            _stores = [stores]
+        else:
+            _stores = stores
 
         resources = []
-        for s in stores:
+        for s in _stores:
             try:
                 if isinstance(s, basestring):
-                    s = self._return_first_item(
-                        self.get_stores(
-                            names=s,
-                            workspaces=workspaces
-                        )
+                    s = self.get_store(
+                        s,
+                        workspace=workspaces[0] if workspaces else None
                     )
                 resources.extend(s.get_resources())
             except FailedRequestError:

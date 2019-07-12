@@ -111,8 +111,6 @@ class _ResourceBase(ResourceInfo):
 
     @property
     def href(self):
-        if self._href:
-            return self._href
         url = build_url(
             self.catalog.service_url,
             [
@@ -124,6 +122,7 @@ class _ResourceBase(ResourceInfo):
                 self.name + ".xml"
             ]
         )
+        return url or self._href
 
 
 class FeatureType(_ResourceBase):
@@ -275,7 +274,7 @@ class WmsLayer(ResourceInfo):
     @property
     def href(self):
         return urljoin(
-            self.catalog.service_url,
+            "{}/".format(self.catalog.service_url),
             "workspaces/{}/wmsstores/{}/wmslayers/{}.xml".format(
                 self.workspace.name,
                 self.store.name,

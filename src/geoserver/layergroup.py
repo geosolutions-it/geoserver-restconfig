@@ -109,7 +109,7 @@ class LayerGroup(ResourceInfo):
             workspace_name = getattr(self.workspace, 'name', self.workspace)
             path_parts = "workspaces/{}/{}".format(workspace_name, path_parts)
         return urljoin(
-            self.catalog.service_url,
+            "{}/".format(self.catalog.service_url),
             path_parts
         )
 

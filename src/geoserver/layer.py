@@ -120,7 +120,7 @@ class Layer(ResourceInfo):
     @property
     def href(self):
         return urljoin(
-            self.catalog.service_url,
+            "{}/".format(self.catalog.service_url),
             "layers/{}.xml".format(self.name)
         )
 
