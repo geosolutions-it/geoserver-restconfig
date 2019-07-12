@@ -538,7 +538,8 @@ class Catalog(object):
         return self.get_stores(names=name, workspaces=[workspace])[0]
 
     def create_coveragestore(self, name, workspace=None, path=None, type='GeoTIFF',
-                             create_layer=True, layer_name=None, source_name=None, upload_data=False, contet_type="image/tiff"):
+                             create_layer=True, layer_name=None, source_name=None, upload_data=False, contet_type="image/tiff",
+                             overwrite=False):
         """
         Create a coveragestore for locally hosted rasters.
         If create_layer is set to true, will create a coverage/layer.
@@ -576,6 +577,12 @@ class Catalog(object):
         if workspace is None:
             workspace = self.get_default_workspace()
         workspace = _name(workspace)
+
+        if not overwrite:
+            stores = self.get_stores(names=name, workspaces=[workspace])
+            if len(stores) > 0:
+                msg = "There is already a store named {} in workspace {}".format(name, workspace)
+                raise ConflictingDataError(msg)
 
         if upload_data is False:
             cs = UnsavedCoverageStore(self, name, workspace)
