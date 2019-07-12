@@ -1019,10 +1019,8 @@ class Catalog(object):
         If no workspaces are provided, will return all styles in the catalog (global and workspace specific).
         Will always return an array.
         '''
-
         all_styles = []
-
-        if workspaces is None:
+        if not workspaces:
             # Add global styles
             url = "{}/styles.xml".format(self.service_url)
             styles = self.get_xml(url)
@@ -1037,7 +1035,10 @@ class Catalog(object):
             workspaces = self.get_workspaces()
 
         for ws in workspaces:
-            url = "{}/workspaces/{}/styles.xml".format(self.service_url, _name(ws))
+            if ws:
+                url = "{}/workspaces/{}/styles.xml".format(self.service_url, _name(ws))
+            else:
+                url = "{}/styles.xml".format(self.service_url)
             try:
                 styles = self.get_xml(url)
             except FailedRequestError as e:
