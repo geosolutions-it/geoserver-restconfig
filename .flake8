@@ -1,0 +1,4 @@
+[flake8]
+ignore = E251
+max-line-length = 140
+exclude = tests/*, build/*, dist/*, examples/*, doc/*
