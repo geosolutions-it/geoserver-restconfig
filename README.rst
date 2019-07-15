@@ -4,9 +4,9 @@ geoserver-restconfig
 .. image:: https://travis-ci.org/geosolutions-it/geoserver-restconfig.svg?branch=master
     :target: https://travis-ci.org/geosolutions-it/geoserver-restconfig
 
-.. note:: geoserver-restconfig is a fork of the old https://travis-ci.org/boundlessgeo/gsconfig
-
 ``geoserver-restconfig`` is a python library for manipulating a GeoServer instance via the GeoServer RESTConfig API. 
+
+**Note:** geoserver-restconfig is a fork of the old https://travis-ci.org/boundlessgeo/gsconfig
 
 The project is distributed under a `MIT License <LICENSE.txt>`_ .
 
