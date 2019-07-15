@@ -27,7 +27,7 @@ For developers:
 
 Getting Help
 ============
-There is a brief manual at http://geosolutions-it.github.io/geoserver-restconfig/ .
+There is a brief manual at http://geonode.org/geoserver-restconfig/ .
 If you have questions, please ask them on the GeoServer Users mailing list: http://geoserver.org/ .
 
 Please use the Github project at http://github.com/geosolutions-it/geoserver-restconfig for any bug reports (and pull requests are welcome, but please include tests where possible.)
