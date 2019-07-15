@@ -1,0 +1,517 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>GeoServer Configuration Objects &#8212; gsconfig 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Welcome to gsconfig’s documentation!" href="index.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to gsconfig’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">gsconfig 0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="geoserver-configuration-objects">
+<h1>GeoServer Configuration Objects<a class="headerlink" href="#geoserver-configuration-objects" title="Permalink to this headline">¶</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">gsconfig</span></code> operates on the GeoServer configuration in terms of several variants of <em>configuration objects:</em></p>
+<blockquote>
+<div><ul class="simple">
+<li><strong>Layers</strong> are spatial datasets published in the OGC services provided by GeoServer.</li>
+<li><strong>LayerGroups</strong> are preset groupings of layers that can be accessed by WMS clients as if they were a single layer.
+For example, you might create a basemap LayerGroup by overlaying several layers containing road, hydrography, impervious area, and forestry information.</li>
+<li><strong>Styles</strong> are sets of rendering rules that define how a Layer should be drawn when accessed via WMS.
+A Layer may be associated with many Styles and a Style may be associated with many Layers.</li>
+<li><strong>Resources</strong> are coherent datasets.
+A Resource containing vector data (discrete features with geometries and associated fields) is called a <strong>FeatureType,</strong> while a Resource containing raster data (a grid of numeric cells) is called a <strong>Coverage.</strong></li>
+<li><strong>Stores</strong> represent connections to some repository of geospatial information, such as a PostGIS database or a directory containing Shapefiles.
+Stores can contain multiple Resources; for example, when connecting to a spatial database each table or view could be published as a separate layer.
+A Store containing only FeatureTypes is called a <strong>DataStore,</strong> while a Store containing only Coverages is called a <strong>CoverageStore.</strong>
+A Store must be either a DataStore or a CoverageStore, never both.</li>
+<li><strong>Workspaces</strong> are arbitrary groupings of data which can help administrators organize data.
+Currently workspaces are also associated with <strong>Namespaces</strong> which affect the advertised names of layers in some OGC services, such as WFS and WCS.</li>
+</ul>
+</div></blockquote>
+<div class="section" id="installing-gsconfig-and-connecting-to-geoserver">
+<h2>Installing gsconfig and Connecting to GeoServer<a class="headerlink" href="#installing-gsconfig-and-connecting-to-geoserver" title="Permalink to this headline">¶</a></h2>
+<p>Since gsconfig interacts with GeoServer via HTTP requests, GeoServer must be running before you can use gsconfig to operate on the GeoServer configuration.
+See the GeoServer user’s manual for information on installing and running GeoServer.</p>
+<dl class="docutils">
+<dt>In addition to GeoServer, you’ll also need:</dt>
+<dd><ul class="first last simple">
+<li>Python, along with the setuptools module for installation</li>
+<li>The Git command line tools</li>
+</ul>
+</dd>
+</dl>
+<p>Once you have the prerequisite software installed, follow these steps:</p>
+<ol class="arabic">
+<li><p class="first">Fetch the gsconfig.py sources:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git clone git://github.com/dwins/gsconfig.py.git
+</pre></div>
+</div>
+</li>
+<li><p class="first">Switch directories to the new copy of gsconfig:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd gsconfig.py/
+</pre></div>
+</div>
+</li>
+<li><p class="first">Run the setup.py script to make the package available:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python setup.py install
+</pre></div>
+</div>
+<p>If you intend to add features or fix bugs in gsconfig, you may prefer to install in “development mode” which will cause any changes you make to the gsconfig sources to instantly apply to other scripts loading it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python setup.py develop
+</pre></div>
+</div>
+</li>
+</ol>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference external" href="http://pypi.python.org/pypi/virtualenv">virtualenv</a> is a popular Python package for managing modules and avoiding version conflicts.
+The <a class="reference external" href="http://peak.telecommunity.com/DevCenter/setuptools">setuptools documentation</a> has more information about the setup.py script.</p>
+</div>
+<p>Now that gsconfig is installed you should be able to load it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python -m geoserver.catalog &amp;&amp; echo &quot;GeoServer loaded properly&quot;
+</pre></div>
+</div>
+<p>To connect to GeoServer, you can simply use the <code class="docutils literal notranslate"><span class="pre">geoserver.catalog.Catalog</span></code> constructor.  This example assumes that the default admin username and password are being used:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>That should work for connecting to a “default” GeoServer configuration, immediately after running the GeoServer installer for your platform or deploying the GeoServer WAR.
+If you are using other credentials (highly recommended for production,) you can provide them to the constructor as well:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://example.com/geoserver/rest&quot;</span><span class="p">,</span>
+    <span class="n">username</span><span class="o">=</span><span class="s2">&quot;root&quot;</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s2">&quot;t0ps3cr3t&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For simplicity’s sake, other examples in this documentation will assume you’re working against a GeoServer installed locally using the default security settings.</p>
+</div>
+<div class="section" id="working-with-layers">
+<h2>Working with Layers<a class="headerlink" href="#working-with-layers" title="Permalink to this headline">¶</a></h2>
+<p>Layers provide settings related only to the publishing of data.
+You can get a listing of all Layers configured in GeoServer:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">all_layers</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_layers</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>If you know a Layer’s name you can also retrieve it directly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">that_layer</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_layer</span><span class="p">(</span><span class="s2">&quot;roads&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Once you have a Layer, you can manipulate its properties to change the configuration.
+However, no changes will actually be applied until you save it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">that_layer</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_layer</span><span class="p">(</span><span class="s2">&quot;roads&quot;</span><span class="p">)</span>
+<span class="n">that_layer</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="c1"># at this point that_layer is still published in GeoServer</span>
+<span class="n">cat</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">that_layer</span><span class="p">)</span>
+<span class="c1"># now it is disabled</span>
+</pre></div>
+</div>
+<p>Layers provide these settings:</p>
+<ul>
+<li><p class="first"><strong>enabled</strong> is a Boolean flag which may be set to <code class="docutils literal notranslate"><span class="pre">False</span></code> to stop serving a layer without deleting it.
+If this is set to <code class="docutils literal notranslate"><span class="pre">True</span></code> then the layer will be served.</p>
+</li>
+<li><p class="first"><strong>default_style</strong> is the Style used in WMS requests when no Style is specified by the client.</p>
+</li>
+<li><p class="first"><strong>alternate_styles</strong> is a list of other Styles that should be advertised as suitable for use with the layer.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">There is currently a caveat regarding the usage of list properties in <code class="docutils literal notranslate"><span class="pre">gsconfig</span></code>.</p>
+</div>
+</li>
+<li><p class="first"><strong>attribution_object</strong> contains information regarding the name, logo, and link to more information about a Layer’s provider.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="working-with-resources">
+<h2>Working with Resources<a class="headerlink" href="#working-with-resources" title="Permalink to this headline">¶</a></h2>
+<p>Further settings, deemed more integral to the data, are available on the Resource associated with the Layer.
+If you already have a Layer object, you can get the corresponding Resource easily:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">resource</span> <span class="o">=</span> <span class="n">layer</span><span class="o">.</span><span class="n">resource</span>
+</pre></div>
+</div>
+<p>Alternatively, you can directly retrieve a list of all Resources:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">resources</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_resources</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>As with Layers, you can retrieve a resource specifically by name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">resource</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span><span class="s2">&quot;roads&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>With only one argument, <code class="docutils literal notranslate"><span class="pre">get_resource</span></code> will search all Workspaces and Stores for a resource with the given name.
+However, it is possible to have multiple resources with a particular name.
+If gsconfig detects that a request is ambiguous, it will raise <code class="docutils literal notranslate"><span class="pre">geonode.catalog.AmbiguousRequestError</span></code> rather than return a resource that might not be theone you had in mind.
+You can be more specific by specifying a Workspace or Store along with the name (although the name is always required.)
+For example, if you know that the <code class="docutils literal notranslate"><span class="pre">roads</span></code> Resource is coming from a Store named <code class="docutils literal notranslate"><span class="pre">municipality</span></code> you can avoid an <code class="docutils literal notranslate"><span class="pre">AmbiguousRequestError</span></code> by telling the <code class="docutils literal notranslate"><span class="pre">Catalog</span></code> about it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">resource</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span><span class="s2">&quot;roads&quot;</span><span class="p">,</span> <span class="n">store</span><span class="o">=</span><span class="s2">&quot;municpality&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A Workspace can be specified similarly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">resource</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span><span class="s2">&quot;roads&quot;</span><span class="p">,</span> <span class="n">workspace</span><span class="o">=</span><span class="s2">&quot;municipality&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>It’s also possible to use a Store or Workspace object directly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">workspace</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_workspace</span><span class="p">(</span><span class="s2">&quot;municipality&quot;</span><span class="p">)</span>
+<span class="n">resource</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span><span class="s2">&quot;roads&quot;</span><span class="p">,</span> <span class="n">workspace</span><span class="o">=</span><span class="n">workspace</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Similar to Layers, you must explicitly save changes to Resources for them to be applied:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">that_resource</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_resource</span><span class="p">(</span><span class="s2">&quot;roads&quot;</span><span class="p">)</span>
+<span class="n">that_resource</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="c1"># at this point that_layer is still published in GeoServer</span>
+<span class="n">cat</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">that_resource</span><span class="p">)</span>
+<span class="c1"># now it is disabled</span>
+</pre></div>
+</div>
+<p>While FeatureTypes (vector Resources) and Coverages (raster Resources) each provide settings unique to their specific needs, there are some common settings as well:</p>
+<ul>
+<li><p class="first"><strong>title</strong> is a string naming the Layer in a human-friendly way.
+For example, it should be suitable for display in a layer listing GUI.</p>
+</li>
+<li><p class="first"><strong>abstract</strong> is a string describing the Layer in more detail than the title.</p>
+</li>
+<li><p class="first"><strong>keywords</strong> is a list of short strings naming topics relevant to this dataset.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">There is currently a caveat regarding the usage of list properties in <code class="docutils literal notranslate"><span class="pre">gsconfig</span></code>.</p>
+</div>
+</li>
+<li><p class="first"><strong>enabled</strong> is a Boolean flag which may be set to <code class="docutils literal notranslate"><span class="pre">False</span></code> to stop serving a Resource without deleting it.
+If this is set to <code class="docutils literal notranslate"><span class="pre">True</span></code> then (assuming a corresponding enabled Layer exists) the Resource will be served.</p>
+</li>
+<li><p class="first"><strong>native_bbox</strong> is a list of strings indicating the bounding box of the dataset in its native projection (the projection used to actually store it in physical media.)
+The first four elements of this list will be the bounding box coordinates (in the order minx, maxx, miny, maxy) and the last element will either be an EPSG code for the projection (for example, “EPSG:4326”) or the WKT for a projection not defined in the EPSG database.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">There is currently a caveat regarding the usage of list properties in <code class="docutils literal notranslate"><span class="pre">gsconfig</span></code>.</p>
+</div>
+</li>
+<li><p class="first"><strong>latlon_bbox</strong> is a list of strings indicating the bounding box of the dataset in latitude/longitude coordinates.
+The first four elements of this list will be the bounding box coordinates (in the order minx, maxx, miny, maxy).
+The fifth element is optional and, if present, will always be “EPSG:4326”.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">There is currently a caveat regarding the usage of list properties in <code class="docutils literal notranslate"><span class="pre">gsconfig</span></code>.</p>
+</div>
+</li>
+<li><p class="first"><strong>projection</strong> is a string describing the projection GeoServer should advertise as the native one for the resource.
+The way this influences the actual values GeoServer will report for data from this resource are determined by the <strong>projection_policy</strong>.</p>
+</li>
+<li><p class="first"><strong>projection_policy</strong> is a string determining how GeoServer will interpret the <strong>projection</strong> setting.
+It may take three values:</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">FORCE_DECLARED</span></code>: the data from the underlying store is assumed to be in the projection specified</li>
+<li><code class="docutils literal notranslate"><span class="pre">FORCE_NATIVE</span></code>: the projection setting is ignored and GeoServer will publish the projection as determined by inspecting the source data</li>
+<li><code class="docutils literal notranslate"><span class="pre">REPROJECT</span></code>: GeoServer will reproject the data in the underlying source to the one specified</li>
+</ul>
+</div></blockquote>
+<p>These are enumerated as constants in the <code class="docutils literal notranslate"><span class="pre">geoserver.support</span></code> package.</p>
+</li>
+<li><p class="first"><strong>metadata_links</strong>  is a list of links to metadata about the resource annotated with a MIME type string and a string identifying the metadata standard.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">There is currently a caveat regarding the usage of list properties in <code class="docutils literal notranslate"><span class="pre">gsconfig</span></code>.</p>
+</div>
+</li>
+</ul>
+<div class="section" id="working-with-featuretypes-vector-data">
+<h3>Working with FeatureTypes (Vector Data)<a class="headerlink" href="#working-with-featuretypes-vector-data" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p class="first"><strong>attributes</strong> is a list of objects describing the names and types of the fields in the data set.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">There is currently a caveat regarding the usage of list properties in <code class="docutils literal notranslate"><span class="pre">gsconfig</span></code>.
+Also, I’m not totally sure what the implications are of editing this property; it is editable through restconfig but not through the GUI.</p>
+</div>
+</li>
+</ul>
+</div>
+<div class="section" id="working-with-coverages-raster-data">
+<h3>Working with Coverages (Raster Data)<a class="headerlink" href="#working-with-coverages-raster-data" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><strong>request_srs_list</strong> is a list of strings defining the SRS’s that GeoServer should allow in requests against this coverage.
+Each SRS should be specified by its EPSG code.</li>
+<li><strong>response_srs_list</strong> is a list of strings defining the SRS’s that GeoServer should use for responding to requests against this coverage.
+Each SRS should be specified by its EPSG code.</li>
+<li><strong>supported_formats</strong> is a list of strings identifying the formats that GeoServer should use for encoding responses to requests against this Coverage.
+New formats may be added by GeoServer extensions, but in a default installation of GeoServer these format names are accepted:<ul>
+<li>ARCGRID</li>
+<li>IMAGEMOSAIC</li>
+<li>GTOPO30</li>
+<li>GEOTIFF</li>
+<li>GIF</li>
+<li>PNG</li>
+<li>JPEG</li>
+<li>TIFF</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="working-with-styles">
+<h2>Working with Styles<a class="headerlink" href="#working-with-styles" title="Permalink to this headline">¶</a></h2>
+<p>Styles provide rules for determining how a data layer should be rendered as an image for viewing.
+You can get a listing of all Styles configured in GeoServer:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">all_styles</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_styles</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>If you know a Style’s name you can also retrieve it directly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">that_style</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_style</span><span class="p">(</span><span class="s2">&quot;highway&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Additionally, you can follow the links from a Layer to the Styles that are associated with it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">that_layer</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_layer</span><span class="p">(</span><span class="s2">&quot;roads&quot;</span><span class="p">)</span>
+<span class="n">that_style</span> <span class="o">=</span> <span class="n">that_layer</span><span class="o">.</span><span class="n">default_style</span>
+</pre></div>
+</div>
+<p>Styles are a bit odd out of all the objects in gsconfig in that they have no writable properties.
+Instead, they are simply a small decoration around style files in SLD format which can be added, deleted, or replaced in full.</p>
+<p>To <em>add</em> a Style, generate an SLD somehow (<code class="docutils literal notranslate"><span class="pre">gsconfig</span></code> does not provide any facilities for doing this.)
+Typically this will be saved to a file, for example <code class="file docutils literal notranslate"><span class="pre">railroad.sld</span></code>.
+This code will then add the SLD file to GeoServer as a Style available for WMS requests:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;railroad.sld&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">cat</span><span class="o">.</span><span class="n">create_style</span><span class="p">(</span><span class="s2">&quot;railroad&quot;</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>To <em>replace</em> an existing Style, simply add another parameter named <code class="docutils literal notranslate"><span class="pre">overwrite</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;railroad.sld&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">cat</span><span class="o">.</span><span class="n">create_style</span><span class="p">(</span><span class="s2">&quot;railroad&quot;</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">(),</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If you need to <em>remove</em> the Style instead, it looks a bit different:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">style</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_style</span><span class="p">(</span><span class="s2">&quot;railroad&quot;</span><span class="p">)</span>
+<span class="n">cat</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">style</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="working-with-layergroups">
+<h2>Working with LayerGroups<a class="headerlink" href="#working-with-layergroups" title="Permalink to this headline">¶</a></h2>
+<p>A LayerGroup “packages up” several Layers to make them more convenient to access together.
+You can get a listing of all Layers configured in GeoServer:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">all_groups</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_layergroups</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>If you know a LayerGroup’s name you can also retrieve it directly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">that_group</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_layergroup</span><span class="p">(</span><span class="s2">&quot;basemap&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Once you have a LayerGroup, you can manipulate its properties to find out what Layers and Styles it uses:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">that_group</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_layergroup</span><span class="p">(</span><span class="s2">&quot;basemap&quot;</span><span class="p">)</span>
+<span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">that_group</span><span class="o">.</span><span class="n">styles</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">that_group</span><span class="o">.</span><span class="n">layers</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>When working with LayerGroups it is important to ensure that the <code class="docutils literal notranslate"><span class="pre">layers</span></code> list and <code class="docutils literal notranslate"><span class="pre">styles</span></code> list have the same length before saving any changes.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">GeoServer also lets us read and set the bounding box for LayerGroups via the REST API but gsconfig doesn’t support this yet.</p>
+</div>
+</div>
+<div class="section" id="working-with-stores">
+<h2>Working with Stores<a class="headerlink" href="#working-with-stores" title="Permalink to this headline">¶</a></h2>
+<p>Resources in GeoServer are always contained within a Store.
+A Store’s configuration includes details of how to connect to some store of spatial data, such as login credentials for a PostgreSQL server or the file path to a GeoTIFF file.
+You can get a listing of all Stores configured in GeoServer:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">all_stores</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_stores</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>If you know a Store’s name you can also retrieve it directly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">that_store</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;db_server&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Once you have a Store, you can manipulate its properties to change the configuration.  However, no changes will actually be applied until you save it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">that_store</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;db_server&quot;</span><span class="p">)</span>
+<span class="n">that_store</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="c1"># at this point that_store is still enabled in GeoServer</span>
+<span class="n">cat</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">that_store</span><span class="p">)</span>
+<span class="c1"># now it is disabled</span>
+</pre></div>
+</div>
+<p>Stores provide one common setting:</p>
+<blockquote>
+<div><ul class="simple">
+<li><em>enabled</em> A Boolean flag which may be set to <code class="docutils literal notranslate"><span class="pre">False</span></code> to stop serving the Resources (and corresponding Layers) for a Store without deleting them or the Store.
+If this is set to <code class="docutils literal notranslate"><span class="pre">True</span></code> then the Layers will be available.</li>
+</ul>
+</div></blockquote>
+<div class="section" id="working-with-datastores-vector-data">
+<h3>Working with DataStores (Vector Data)<a class="headerlink" href="#working-with-datastores-vector-data" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><strong>connection_parameters</strong> a dict containing connection details.
+The keys used and interpretation of their values depends on the type of datastore involved.
+See <span class="xref std std-doc">examples</span> for some sample usage, or <span class="xref std std-doc">cross-ref-with-geotools</span> for details on how to identify the parameters for datastores not covered there.</li>
+</ul>
+</div>
+<div class="section" id="working-with-coveragestores-raster-data">
+<h3>Working with CoverageStores (Raster Data)<a class="headerlink" href="#working-with-coveragestores-raster-data" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><strong>url</strong> A URL string (usually with the <code class="docutils literal notranslate"><span class="pre">file:</span></code> pseudo-protocol) identifying the raster file backing the CoverageStore.</li>
+<li><strong>type</strong> A string identifying the format of the coverage file.
+While GeoServer extensions can add support for additional formats, the following are supported in a “vanilla” GeoServer installation:<ul>
+<li><code class="docutils literal notranslate"><span class="pre">Gtopo30</span></code>, <code class="docutils literal notranslate"><span class="pre">GeoTIFF</span></code>, <code class="docutils literal notranslate"><span class="pre">ArcGrid</span></code>, <code class="docutils literal notranslate"><span class="pre">WorldImage</span></code>, <code class="docutils literal notranslate"><span class="pre">ImageMosaic</span></code></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="working-with-workspaces">
+<h2>Working with Workspaces<a class="headerlink" href="#working-with-workspaces" title="Permalink to this headline">¶</a></h2>
+<p>Workspaces provide a logical grouping to help administrators organize the data in a GeoServer instance.
+You can get a listing of all Workspaces configured in GeoServer:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">all_workspaces</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_workspaces</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>If you know a Workspace’s name you can also retrieve it directly:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">geoserver.catalog</span> <span class="k">import</span> <span class="n">Catalog</span>
+<span class="n">cat</span> <span class="o">=</span> <span class="n">Catalog</span><span class="p">(</span><span class="s2">&quot;http://localhost:8080/geoserver/rest&quot;</span><span class="p">)</span>
+<span class="n">that_workspace</span> <span class="o">=</span> <span class="n">cat</span><span class="o">.</span><span class="n">get_workspace</span><span class="p">(</span><span class="s2">&quot;forestry&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">GeoServer Configuration Objects</a><ul>
+<li><a class="reference internal" href="#installing-gsconfig-and-connecting-to-geoserver">Installing gsconfig and Connecting to GeoServer</a></li>
+<li><a class="reference internal" href="#working-with-layers">Working with Layers</a></li>
+<li><a class="reference internal" href="#working-with-resources">Working with Resources</a><ul>
+<li><a class="reference internal" href="#working-with-featuretypes-vector-data">Working with FeatureTypes (Vector Data)</a></li>
+<li><a class="reference internal" href="#working-with-coverages-raster-data">Working with Coverages (Raster Data)</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#working-with-styles">Working with Styles</a></li>
+<li><a class="reference internal" href="#working-with-layergroups">Working with LayerGroups</a></li>
+<li><a class="reference internal" href="#working-with-stores">Working with Stores</a><ul>
+<li><a class="reference internal" href="#working-with-datastores-vector-data">Working with DataStores (Vector Data)</a></li>
+<li><a class="reference internal" href="#working-with-coveragestores-raster-data">Working with CoverageStores (Raster Data)</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#working-with-workspaces">Working with Workspaces</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to gsconfig’s documentation!</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/model.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to gsconfig’s documentation!"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">gsconfig 0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2011, David Winslow.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.5.
+    </div>
+  </body>
+</html>

@@ -1,8 +1,0 @@
-*.pyc
-src/GSConfig.*
-bin/
-dist/
-include/
-lib/
-lib64
-doc/_build/
