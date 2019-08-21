@@ -15,7 +15,7 @@ setup(
     long_description=readme_text,
     keywords="GeoServer REST Configuration",
     license="MIT",
-    url="https://github.com/geosolutions-it/geoserver-restconfig",
+    url="https://github.com/GeoNode/geoserver-restconfig",
     author="David Winslow, Sebastian Benthall, Alessio Fabiani",
     author_email="alessio.fabiani@gmail.com",
     install_requires=[
