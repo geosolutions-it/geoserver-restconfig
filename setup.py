@@ -10,7 +10,7 @@ except IOError:
 
 setup(
     name="geoserver-restconfig",
-    version="1.0.1",
+    version="1.0.2",
     description="GeoServer REST Configuration",
     long_description=readme_text,
     keywords="GeoServer REST Configuration",
@@ -20,7 +20,7 @@ setup(
     author_email="alessio.fabiani@gmail.com",
     install_requires=[
         'requests >= 2.14.0',
-        'gisdata == 0.5.4',
+        'gisdata >= 0.5.4',
         'future'
     ],
     package_dir={'': 'src'},

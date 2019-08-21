@@ -152,7 +152,7 @@ class Catalog(object):
             resp = req_method(url, headers=headers, data=data)
         else:
             valid_uname_pw = base64.b64encode(
-                    b"%s:%s" % (self.username, self.password)).decode("ascii")
+                ("%s:%s" % (self.username, self.password)).encode("utf-8")).decode("ascii")
             headers['Authorization'] = 'Basic {}'.format(valid_uname_pw)
             resp = req_method(url, headers=headers, data=data)
         return resp
