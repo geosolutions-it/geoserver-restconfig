@@ -277,16 +277,16 @@ def atom_link_xml(builder, href):
 def bbox_xml(builder, box):
     minx, maxx, miny, maxy, crs = box
     builder.start("minx", dict())
-    builder.data(minx)
+    builder.data(str(minx))
     builder.end("minx")
     builder.start("maxx", dict())
-    builder.data(maxx)
+    builder.data(str(maxx))
     builder.end("maxx")
     builder.start("miny", dict())
-    builder.data(miny)
+    builder.data(str(miny))
     builder.end("miny")
     builder.start("maxy", dict())
-    builder.data(maxy)
+    builder.data(str(maxy))
     builder.end("maxy")
     if crs is not None:
         builder.start("crs", {"class": "projected"})
