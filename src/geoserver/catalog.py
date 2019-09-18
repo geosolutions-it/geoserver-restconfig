@@ -892,6 +892,7 @@ class Catalog(object):
         '''
         if not stores:
             _stores = self.get_stores(
+                names=names,
                 workspaces=workspaces
             )
         elif not isinstance(stores, list):

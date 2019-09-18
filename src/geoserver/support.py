@@ -652,3 +652,13 @@ def workspace_from_url(url):
         return split_path[split_path.index('workspaces') + 1]
     else:
         return None
+
+
+def resource_from_url(url, workspace):
+    parts = urlparse(url)
+    split_path = parts.path.split('/')
+    if workspace in split_path:
+        resource_type = split_path[split_path.index(workspace) + 1]
+        return split_path[split_path.index(resource_type) + 1]
+    else:
+        return None
