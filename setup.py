@@ -10,7 +10,7 @@ except IOError:
 
 setup(
     name="geoserver-restconfig",
-    version="1.0.3",
+    version="1.0.4",
     description="GeoServer REST Configuration",
     long_description=readme_text,
     keywords="GeoServer REST Configuration",
