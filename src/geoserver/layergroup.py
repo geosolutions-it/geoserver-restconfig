@@ -8,6 +8,8 @@
 # LICENSE.txt file in the root directory of this source tree.
 #
 #########################################################################
+
+from six import string_types
 try:
     from urllib.parse import urljoin
 except:
@@ -73,7 +75,7 @@ class LayerGroup(ResourceInfo):
     def __init__(self, catalog, name, workspace=None):
         super(LayerGroup, self).__init__()
 
-        assert isinstance(name, basestring)
+        assert isinstance(name, string_types)
 
         self.catalog = catalog
         self.name = name

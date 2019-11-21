@@ -8,6 +8,8 @@
 # LICENSE.txt file in the root directory of this source tree.
 #
 #########################################################################
+
+from six import string_types
 try:
     from urllib.parse import urljoin
 except:
@@ -84,7 +86,7 @@ class _ResourceBase(ResourceInfo):
         super(_ResourceBase, self).__init__()
         if not href:
             assert isinstance(store, ResourceInfo)
-            assert isinstance(name, basestring)
+            assert isinstance(name, string_types)
             assert workspace is not None
         else:
             parts = href.split('/')

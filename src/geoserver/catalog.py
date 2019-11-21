@@ -8,8 +8,9 @@
 # LICENSE.txt file in the root directory of this source tree.
 #
 #########################################################################
-from datetime import datetime, timedelta
+
 import logging
+from datetime import datetime, timedelta
 from geoserver.layer import Layer
 from geoserver.resource import FeatureType
 from geoserver.store import (
@@ -32,6 +33,7 @@ from xml.parsers.expat import ExpatError
 import requests
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
+from six import string_types
 
 try:
     from past.builtins import basestring
@@ -77,9 +79,9 @@ def _name(named):
          as long as it's a string
        * otherwise, we raise a ValueError
     """
-    if isinstance(named, basestring) or named is None:
+    if isinstance(named, string_types) or named is None:
         return named
-    elif hasattr(named, 'name') and isinstance(named.name, basestring):
+    elif hasattr(named, 'name') and isinstance(named.name, string_types):
         return named.name
     else:
         raise ValueError("Can't interpret %s as a name or a configuration object" % named)
@@ -100,14 +102,15 @@ class Catalog(object):
     - Namespaces, which provide unique identifiers for resources
     """
 
-    def __init__(self, service_url, username="admin", password="geoserver", validate_ssl_certificate=True, access_token=None):
+    def __init__(self, service_url, username="admin", password="geoserver", validate_ssl_certificate=True, access_token=None, retries=3, backoff_factor=0.9):
         self.service_url = service_url.strip("/")
         self.username = username
         self.password = password
         self.validate_ssl_certificate = validate_ssl_certificate
         self.access_token = access_token
-        self.setup_connection()
-
+        self.retries = retries
+        self.backoff_factor = backoff_factor
+        self.setup_connection(retries=self.retries, backoff_factor=self.backoff_factor)
         self._cache = {}
         self._version = None
 
@@ -121,20 +124,21 @@ class Catalog(object):
     def __setstate__(self, state):
         '''restore http connection upon unpickling'''
         self.__dict__.update(state)
-        self.setup_connection()
+        self.setup_connection(retries=self.retries, backoff_factor=self.backoff_factor)
 
-    def setup_connection(self):
+    def setup_connection(self, retries=3, backoff_factor=0.9):
         self.client = requests.session()
         self.client.verify = self.validate_ssl_certificate
         parsed_url = urlparse(self.service_url)
         retry = Retry(
-            total = 6,
-            status = 6,
-            backoff_factor = 0.9,
+            total = retries or self.retries,
+            status = retries or self.retries,
+            read = retries or self.retries,
+            connect = retries or self.retries,
+            backoff_factor = backoff_factor or self.backoff_factor,
             status_forcelist = [502, 503, 504],
             method_whitelist = set(['HEAD', 'TRACE', 'GET', 'PUT', 'POST', 'OPTIONS', 'DELETE'])
         )
-
         self.client.mount("{}://".format(parsed_url.scheme), HTTPAdapter(max_retries=retry))
 
     def http_request(self, url, data=None, method='get', headers={}):
@@ -295,8 +299,6 @@ class Catalog(object):
     def _return_first_item(self, _list):
         if len(_list) == 0:
             return None
-        elif len(_list) > 1:
-            raise AmbiguousRequestError("Multiple items found")
         else:
             return _list[0]
 
@@ -330,7 +332,7 @@ class Catalog(object):
 
         if names is None:
             names = []
-        elif isinstance(names, basestring):
+        elif isinstance(names, string_types):
             names = [s.strip() for s in names.split(',') if s.strip()]
 
         if stores and names:
@@ -348,7 +350,7 @@ class Catalog(object):
         return self._return_first_item(stores)
 
     def create_datastore(self, name, workspace=None):
-        if isinstance(workspace, basestring):
+        if isinstance(workspace, string_types):
             workspace = self.get_workspaces(names=workspace)[0]
         elif workspace is None:
             workspace = self.get_default_workspace()
@@ -381,7 +383,7 @@ class Catalog(object):
         return self.get_layer(name)
 
     def add_data_to_store(self, store, name, data, workspace=None, overwrite = False, charset = None):
-        if isinstance(store, basestring):
+        if isinstance(store, string_types):
             store = self.get_stores(names=store, workspaces=[workspace])[0]
         if workspace is not None:
             workspace = _name(workspace)
@@ -498,7 +500,7 @@ class Catalog(object):
         if hasattr(data, 'read'):
             # Adding this check only to pass tests. We should drop support for passing a file object
             upload_data = data
-        elif isinstance(data, basestring):
+        elif isinstance(data, string_types):
             if os.path.splitext(data)[-1] == ".zip":
                 upload_data = open(data, 'rb')
             else:
@@ -652,7 +654,7 @@ class Catalog(object):
 
         params = dict()
         workspace_name = workspace
-        if isinstance(store, basestring):
+        if isinstance(store, string_types):
             store_name = store
         else:
             store_name = store.name
@@ -690,7 +692,7 @@ class Catalog(object):
         params = dict()
 
         workspace_name = workspace
-        if isinstance(store, basestring):
+        if isinstance(store, string_types):
             store_name = store
         else:
             store_name = store.name
@@ -741,7 +743,7 @@ class Catalog(object):
             params['offset'] = offset
 
         workspace_name = workspace
-        if isinstance(store, basestring):
+        if isinstance(store, string_types):
             store_name = store
         else:
             store_name = store.name
@@ -903,7 +905,7 @@ class Catalog(object):
         resources = []
         for s in _stores:
             try:
-                if isinstance(s, basestring):
+                if isinstance(s, string_types):
                     s = self.get_store(
                         s,
                         workspace=workspaces[0] if workspaces else None
@@ -914,7 +916,7 @@ class Catalog(object):
 
         if names is None:
             names = []
-        elif isinstance(names, basestring):
+        elif isinstance(names, string_types):
             names = [s.strip() for s in names.split(',') if s.strip()]
 
         if resources and names:
@@ -944,7 +946,7 @@ class Catalog(object):
             return None
 
     def get_layers(self, resource=None):
-        if isinstance(resource, basestring):
+        if isinstance(resource, string_types):
             ws_name = None
             if self.get_short_version() >= "2.13":
                 if ":" in resource:
@@ -978,7 +980,7 @@ class Catalog(object):
             groups = self.get_xml(url)
             layergroups.extend([LayerGroup(self, g.find("name").text, None) for g in groups.findall("layerGroup")])
             workspaces = []
-        elif isinstance(workspaces, basestring):
+        elif isinstance(workspaces, string_types):
             workspaces = [s.strip() for s in workspaces.split(',') if s.strip()]
         elif isinstance(workspaces, Workspace):
             workspaces = [workspaces]
@@ -1001,7 +1003,7 @@ class Catalog(object):
 
         if names is None:
             names = []
-        elif isinstance(names, basestring):
+        elif isinstance(names, string_types):
             names = [s.strip() for s in names.split(',') if s.strip()]
 
         if layergroups and names:
@@ -1039,7 +1041,7 @@ class Catalog(object):
             styles = self.get_xml(url)
             all_styles.extend([Style(self, s.find('name').text) for s in styles.findall("style")])
             workspaces = []
-        elif isinstance(workspaces, basestring):
+        elif isinstance(workspaces, string_types):
             workspaces = [s.strip() for s in workspaces.split(',') if s.strip()]
         elif isinstance(workspaces, Workspace):
             workspaces = [workspaces]
@@ -1066,7 +1068,7 @@ class Catalog(object):
 
         if names is None:
             names = []
-        elif isinstance(names, basestring):
+        elif isinstance(names, string_types):
             names = [s.strip() for s in names.split(',') if s.strip()]
 
         if all_styles and names:
@@ -1157,7 +1159,7 @@ class Catalog(object):
         '''
         if names is None:
             names = []
-        elif isinstance(names, basestring):
+        elif isinstance(names, string_types):
             names = [s.strip() for s in names.split(',') if s.strip()]
 
         data = self.get_xml("{}/workspaces.xml".format(self.service_url))

@@ -8,7 +8,10 @@
 # LICENSE.txt file in the root directory of this source tree.
 #
 #########################################################################
+
+from six import string_types
 from geoserver.support import ResourceInfo, build_url, xml_property
+
 try:
     from past.builtins import basestring
 except ImportError:
@@ -25,7 +28,7 @@ class Style(ResourceInfo):
 
     def __init__(self, catalog, name, workspace=None, style_format="sld10"):
         super(Style, self).__init__()
-        assert isinstance(name, basestring)
+        assert isinstance(name, string_types)
         assert style_format in Style.supported_formats
 
         self.catalog = catalog

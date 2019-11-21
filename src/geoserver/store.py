@@ -8,6 +8,8 @@
 # LICENSE.txt file in the root directory of this source tree.
 #
 #########################################################################
+
+from six import string_types
 import geoserver.workspace as ws
 from geoserver.resource import featuretype_from_index, coverage_from_index, wmslayer_from_index
 from geoserver.support import ResourceInfo, xml_property, key_value_pairs, write_bool, write_dict, write_string, build_url
@@ -44,7 +46,7 @@ class DataStore(ResourceInfo):
         super(DataStore, self).__init__()
 
         assert isinstance(workspace, ws.Workspace)
-        assert isinstance(name, basestring)
+        assert isinstance(name, string_types)
         self.catalog = catalog
         self.workspace = workspace
         self.name = name

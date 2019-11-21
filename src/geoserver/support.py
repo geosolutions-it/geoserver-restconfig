@@ -8,11 +8,13 @@
 # LICENSE.txt file in the root directory of this source tree.
 #
 #########################################################################
+
+import os
 import logging
 from xml.etree.ElementTree import TreeBuilder, tostring
 from tempfile import mkstemp
 from zipfile import ZipFile
-import os
+from six import string_types
 
 try:
     from urllib.parse import urljoin, quote, urlencode, urlparse
@@ -55,8 +57,8 @@ def build_url(base, seg, query=None):
         Cleans the segment and encodes to UTF-8 if the segment is unicode.
         """
         segment = segment.strip('/')
-        if isinstance(segment, basestring):
-            segment = segment.encode('utf-8')
+        if isinstance(segment, string_types):
+            segment = segment
         return segment
 
     seg = (quote(clean_segment(s)) for s in seg)
@@ -171,7 +173,7 @@ def write_dict(name):
             if k == 'port':
                 v = str(v)
             builder.start("entry", dict(key=k))
-            v = v if isinstance(v, basestring) else str(v)
+            v = v if isinstance(v, string_types) else str(v)
             builder.data(v)
             builder.end("entry")
         builder.end(name)
@@ -247,7 +249,7 @@ def prepare_upload_bundle(name, data):
     zip_file = ZipFile(path, 'w')
     for ext, stream in data.items():
         fname = "%s.%s" % (name, ext)
-        if (isinstance(stream, basestring)):
+        if (isinstance(stream, string_types)):
             zip_file.write(stream, fname)
         else:
             zip_file.writestr(fname, stream.read())
@@ -381,14 +383,14 @@ class DimensionInfo(object):
 
     def resolution_millis(self):
         '''if set, get the value of resolution in milliseconds'''
-        if self.resolution is None or not isinstance(self.resolution, basestring):
+        if self.resolution is None or not isinstance(self.resolution, string_types):
                 return self.resolution
         val, mult = self.resolution.split(' ')
         return int(float(val) * self._multipier(mult) * 1000)
 
     def resolution_str(self):
         '''if set, get the value of resolution as "<n> <period>s", for example: "8 seconds"'''
-        if self.resolution is None or isinstance(self.resolution, basestring):
+        if self.resolution is None or isinstance(self.resolution, string_types):
             return self.resolution
         seconds = self.resolution / 1000.
         biggest = self._lookup[0]
@@ -620,8 +622,8 @@ def metadata(node):
 def _decode_list(data):
     rv = []
     for item in data:
-        if isinstance(item, basestring):
-            item = item.encode('utf-8')
+        if isinstance(item, string_types):
+            item = item
         elif isinstance(item, list):
             item = _decode_list(item)
         elif isinstance(item, dict):
@@ -633,10 +635,10 @@ def _decode_list(data):
 def _decode_dict(data):
     rv = {}
     for key, value in data.items():
-        if isinstance(key, basestring):
-            key = key.encode('utf-8')
-        if isinstance(value, basestring):
-            value = value.encode('utf-8')
+        if isinstance(key, string_types):
+            key = key
+        if isinstance(value, string_types):
+            value = value
         elif isinstance(value, list):
             value = _decode_list(value)
         elif isinstance(value, dict):
