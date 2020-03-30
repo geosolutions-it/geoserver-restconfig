@@ -1,5 +1,8 @@
 # Change Log
 
+## 2.0.2 [2020-03-30]
+<li> 2020-03-30: "Create Style" compliancy with GeoServer 2.16.x / 2.17.x</li>
+
 ## 2.0.0 [2020-01-16]
 <li> 2020-01-14: Python 3 / Django 2 Compatibility</li>
 
