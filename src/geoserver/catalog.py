@@ -172,7 +172,10 @@ class Catalog(object):
         resp = self.http_request(url)
         version = None
         if resp.status_code == 200:
-            dom = XML(resp.content)
+            content = resp.content
+            if isinstance(content, bytes):
+                content = content.decode('UTF-8')
+            dom = XML(content)
             resources = dom.findall("resource")
             for resource in resources:
                 if resource.attrib["name"] == "GeoServer":
@@ -254,8 +257,11 @@ class Catalog(object):
         else:
             resp = self.http_request(rest_url)
             if resp.status_code == 200:
-                self._cache[rest_url] = (datetime.now(), resp.content)
-                return parse_or_raise(resp.content)
+                content = resp.content
+                if isinstance(content, bytes):
+                    content = content.decode('UTF-8')
+                self._cache[rest_url] = (datetime.now(), content)
+                return parse_or_raise(content)
             else:
                 raise FailedRequestError(resp.content)
 
