@@ -1123,7 +1123,13 @@ class Catalog(object):
 
             resp = self.http_request(body_href, method='put', data=data, headers=headers)
             if resp.status_code not in (200, 201, 202):
-                raise FailedRequestError('Failed to create style {} : {}, {}'.format(name, resp.status_code, resp.text))
+                body_href = os.path.splitext(style.body_href)[0] + '.xml'
+                if raw:
+                    body_href += "?raw=true"
+
+                resp = self.http_request(body_href, method='put', data=data, headers=headers)
+                if resp.status_code not in (200, 201, 202):
+                    raise FailedRequestError('Failed to create style {} : {}, {}'.format(name, resp.status_code, resp.text))
 
             self._cache.pop(style.href, None)
             self._cache.pop(style.body_href, None)
