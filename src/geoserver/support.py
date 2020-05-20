@@ -246,7 +246,7 @@ def prepare_upload_bundle(name, data):
     file-like objects. The client code is responsible for deleting the zip
     archive when it's done."""
     fd, path = mkstemp()
-    zip_file = ZipFile(path, 'w')
+    zip_file = ZipFile(path, 'w', allowZip64=True)
     for ext, stream in data.items():
         fname = "%s.%s" % (name, ext)
         if (isinstance(stream, string_types)):
