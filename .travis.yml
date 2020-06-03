@@ -12,34 +12,12 @@ services:
  - postgresql
 matrix:
   include:
-    - python: "2.7"
-      env: GS_VERSION=2.12.x
-    - python: "2.7"
-      env: GS_VERSION=2.13.x
-    - python: "2.7"
-      env: GS_VERSION=2.14.x
-    - python: "2.7"
-      env: GS_VERSION=2.15.x
-    - python: "2.7"
-      env: GS_VERSION=master
-    - python: "3.6"
-      env: GS_VERSION=2.12.x
-    - python: "3.6"
-      env: GS_VERSION=2.13.x
-    - python: "3.6"
-      env: GS_VERSION=2.14.x
-    - python: "3.6"
-      env: GS_VERSION=2.15.x
-    - python: "3.6"
-      env: GS_VERSION=master
-    - python: "3.7"
-      env: GS_VERSION=2.12.x
-    - python: "3.7"
-      env: GS_VERSION=2.13.x
-    - python: "3.7"
-      env: GS_VERSION=2.14.x
     - python: "3.7"
       env: GS_VERSION=2.15.x
+    - python: "3.7"
+      env: GS_VERSION=2.16.x
+    - python: "3.7"
+      env: GS_VERSION=2.17.x
     - python: "3.7"
       env: GS_VERSION=master
 install:
