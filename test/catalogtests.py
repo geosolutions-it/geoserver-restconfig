@@ -192,8 +192,7 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual("states_shapefile", self.cat.get_stores(names="states_shapefile", workspaces=topp.name)[0].name)
         self.assertEqual("states_shapefile", self.cat.get_stores(names="states_shapefile")[0].name)
         self.assertEqual("sfdem", self.cat.get_stores(names="sfdem", workspaces=sf.name)[0].name)
-        self.assertEqual("sfdem", self.cat.get_stores(names="sfdem")[0].name)
-        self.assertEqual("sfdem", self.cat.get_store("sfdem").name)
+        self.assertEqual("sfdem", self.cat.get_store("sfdem", workspace="sf").name)
         self.assertIsNone(self.cat.get_store("blah+blah-"))
 
     def testResources(self):
@@ -202,16 +201,15 @@ class CatalogTests(unittest.TestCase):
         states = self.cat.get_stores(names="states_shapefile", workspaces=topp.name)[0]
         sfdem = self.cat.get_stores(names="sfdem", workspaces=sf.name)[0]
         self.assertEqual(19, len(self.cat.get_resources()))
-        self.assertEqual(2, len(self.cat.get_resources(stores=[states.name, sfdem.name])))
+        self.assertEqual(2, len(self.cat.get_resources(stores=[states.name, sfdem.name], workspaces=[topp.name, sf.name])))
         self.assertEqual(11, len(self.cat.get_resources(workspaces=[topp.name, sf.name])))
 
-        self.assertEqual("states", self.cat.get_resources(names="states", stores=states.name)[0].name)
+        self.assertEqual("states", self.cat.get_resources(names="states", stores=states.name, workspaces=topp.name)[0].name)
         self.assertEqual("states", self.cat.get_resources(names="states", workspaces=topp.name)[0].name)
-        self.assertEqual("states", self.cat.get_resources(names="states")[0].name)
-        self.assertEqual("states", self.cat.get_resource("states").name)
+        self.assertEqual("states", self.cat.get_resource("states", workspace=topp.name).name)
         self.assertIsNone(self.cat.get_resource("blah+1blah-2"))
 
-        states = self.cat.get_resources(names="states")[0]
+        states = self.cat.get_resources(names="states", workspaces=topp.name)[0]
 
         fields = [
             states.title,
@@ -227,9 +225,8 @@ class CatalogTests(unittest.TestCase):
         self.assertFalse(len(states.attributes) == 0)
         self.assertTrue(states.enabled)
 
-        self.assertEqual("sfdem", self.cat.get_resources(names="sfdem", stores=sfdem.name)[0].name)
+        self.assertEqual("sfdem", self.cat.get_resources(names="sfdem", stores=sfdem.name, workspaces=sf.name)[0].name)
         self.assertEqual("sfdem", self.cat.get_resources(names="sfdem", workspaces=sf.name)[0].name)
-        self.assertEqual("sfdem", self.cat.get_resources(names="sfdem")[0].name)
 
     def testResourcesUpdate(self):
         res_dest = self.cat.get_resources()
@@ -413,7 +410,7 @@ class ModifyingTests(unittest.TestCase):
 
     def testFeatureTypeSave(self):
         # test saving round trip
-        rs = self.cat.get_resources("bugsites")[0]
+        rs = self.cat.get_resources("bugsites", workspaces="sf")[0]
         old_abstract = rs.abstract
         new_abstract = "Not the original abstract"
         enabled = rs.enabled
@@ -421,7 +418,7 @@ class ModifyingTests(unittest.TestCase):
         # Change abstract on server
         rs.abstract = new_abstract
         self.cat.save(rs)
-        rs = self.cat.get_resources("bugsites")[0]
+        rs = self.cat.get_resources("bugsites", workspaces="sf")[0]
         self.assertEqual(new_abstract, rs.abstract)
         self.assertEqual(enabled, rs.enabled)
 
@@ -429,7 +426,7 @@ class ModifyingTests(unittest.TestCase):
         rs.keywords = ["bugsites", "gsconfig"]
         enabled = rs.enabled
         self.cat.save(rs)
-        rs = self.cat.get_resources("bugsites")[0]
+        rs = self.cat.get_resources("bugsites", workspaces="sf")[0]
         self.assertEqual(["bugsites", "gsconfig"], rs.keywords)
         self.assertEqual(enabled, rs.enabled)
 
@@ -437,7 +434,7 @@ class ModifyingTests(unittest.TestCase):
         rs.metadata_links = [("text/xml", "TC211", "http://example.com/gsconfig.test.metadata")]
         enabled = rs.enabled
         self.cat.save(rs)
-        rs = self.cat.get_resources("bugsites")[0]
+        rs = self.cat.get_resources("bugsites", workspaces="sf")[0]
         self.assertEqual(
             [("text/xml", "TC211", "http://example.com/gsconfig.test.metadata")],
             rs.metadata_links)
@@ -446,7 +443,7 @@ class ModifyingTests(unittest.TestCase):
         # Restore abstract
         rs.abstract = old_abstract
         self.cat.save(rs)
-        rs = self.cat.get_resources("bugsites")[0]
+        rs = self.cat.get_resources("bugsites", workspaces="sf")[0]
         self.assertEqual(old_abstract, rs.abstract)
 
     def testDataStoreCreate(self):
@@ -557,27 +554,27 @@ class ModifyingTests(unittest.TestCase):
 
     def testCoverageSave(self):
         # test saving round trip
-        rs = self.cat.get_resources("Arc_Sample")[0]
+        rs = self.cat.get_resources("Arc_Sample", workspaces="nurc")[0]
         old_abstract = rs.abstract
         new_abstract = "Not the original abstract"
 
         # # Change abstract on server
         rs.abstract = new_abstract
         self.cat.save(rs)
-        rs = self.cat.get_resources("Arc_Sample")[0]
+        rs = self.cat.get_resources("Arc_Sample", workspaces="nurc")[0]
         self.assertEqual(new_abstract, rs.abstract)
 
         # Restore abstract
         rs.abstract = old_abstract
         self.cat.save(rs)
-        rs = self.cat.get_resources("Arc_Sample")[0]
+        rs = self.cat.get_resources("Arc_Sample", workspaces="nurc")[0]
         self.assertEqual(old_abstract, rs.abstract)
 
         # Change metadata links on server
         rs.metadata_links = [("text/xml", "TC211", "http://example.com/gsconfig.test.metadata")]
         enabled = rs.enabled
         self.cat.save(rs)
-        rs = self.cat.get_resources("Arc_Sample")[0]
+        rs = self.cat.get_resources("Arc_Sample", workspaces="nurc")[0]
         self.assertEqual(
             [("text/xml", "TC211", "http://example.com/gsconfig.test.metadata")],
             rs.metadata_links)
@@ -592,21 +589,21 @@ class ModifyingTests(unittest.TestCase):
         self.assertEquals(set(rs.request_srs_list), srs_before, str(rs.request_srs_list))
         rs.request_srs_list = rs.request_srs_list + ['EPSG:3785']
         self.cat.save(rs)
-        rs = self.cat.get_resources("Arc_Sample")[0]
+        rs = self.cat.get_resources("Arc_Sample", workspaces="nurc")[0]
         self.assertEquals(set(rs.request_srs_list), srs_after, str(rs.request_srs_list))
 
         # set and save response_srs_list
         self.assertEquals(set(rs.response_srs_list), srs_before, str(rs.response_srs_list))
         rs.response_srs_list = rs.response_srs_list + ['EPSG:3785']
         self.cat.save(rs)
-        rs = self.cat.get_resources("Arc_Sample")[0]
+        rs = self.cat.get_resources("Arc_Sample", workspaces="nurc")[0]
         self.assertEquals(set(rs.response_srs_list), srs_after, str(rs.response_srs_list))
 
         # set and save supported_formats
         self.assertEquals(set(rs.supported_formats), formats, str(rs.supported_formats))
         rs.supported_formats = ["PNG", "GIF", "TIFF"]
         self.cat.save(rs)
-        rs = self.cat.get_resources("Arc_Sample")[0]
+        rs = self.cat.get_resources("Arc_Sample", workspaces="nurc")[0]
         self.assertEquals(set(rs.supported_formats), formats_after, str(rs.supported_formats))
 
     def testWmsStoreCreate(self):
@@ -892,7 +889,7 @@ class ModifyingTests(unittest.TestCase):
         self.assertEqual(tas.styles, [None, None, None], tas.styles)
 
         # force a refresh to check the remote state
-        tas.refresh()
+        # tas.refresh()
         if self.gs_version >= "2.13":
             self.assertEqual(tas.layers, [
                 'topp:tasmania_state_boundaries',
@@ -937,7 +934,7 @@ class ModifyingTests(unittest.TestCase):
         '''
         name = 'cea_mosaic_external'
         path = os.path.join(os.getcwd(), 'test/data/mosaic/external')
-        self.cat.create_imagemosaic(name, path, workspace = 'topp')
+        self.cat.create_imagemosaic(name, path, workspace='topp')
         self.cat._cache.clear()
         resource = self.cat.get_layer("external").resource
         self.assert_(resource is not None)
