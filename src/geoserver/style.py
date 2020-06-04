@@ -118,7 +118,8 @@ class Style(ResourceInfo):
 
     @property
     def body(self):
-        resp = self.catalog.http_request(self._build_href('.{}'.format(self.style_format)))
+        # [:-2] remove version tag from type. GeoServer does not accept it
+        resp = self.catalog.http_request(self._build_href('.{}'.format(self.style_format[:-2])))
         return resp.content
 
     def update_body(self, body):
