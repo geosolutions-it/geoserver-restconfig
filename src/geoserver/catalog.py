@@ -1095,10 +1095,18 @@ class Catalog(object):
     def __build_style_list(self, styles_tree, ws=None):
         all_styles = []
         for s in styles_tree.findall("style"):
-            style_format = self.get_xml(s[1].attrib.get('href')).find('format').text
-            style_version = self.get_xml(s[1].attrib.get('href')).find('languageVersion').find(
-                'version').text.replace('.', '')[:-1]
-            all_styles.append(Style(self, s.find("name").text, _name(ws), style_format + style_version))
+            try:
+                style_format = self.get_xml(s[1].attrib.get('href')).find('format').text
+                style_version = self.get_xml(s[1].attrib.get('href')).find('languageVersion').find(
+                    'version').text.replace('.', '')[:-1]
+                all_styles.append(
+                    Style(self, s.find("name").text, _name(ws), style_format + style_version)
+                )
+            except Exception:
+                all_styles.append(
+                    Style(self, s.find('name').text, _name(ws))
+                )
+
         return all_styles
 
     def get_style(self, name, workspace=None):
