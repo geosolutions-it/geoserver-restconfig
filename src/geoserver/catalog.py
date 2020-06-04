@@ -439,7 +439,6 @@ class Catalog(object):
                     raise FailedRequestError('Failed to add data to store {} : {}, {}'.format(store, resp.status_code, resp.text))
                 self._cache.clear()
         finally:
-            # os.unlink(bundle)
             pass
 
     def create_featurestore(self, name, data, workspace=None, overwrite=False, charset=None):
@@ -487,7 +486,6 @@ class Catalog(object):
             self._cache.clear()
         finally:
             file_obj.close()
-            os.unlink(archive)
 
     def create_imagemosaic(self, name, data, configure='first', workspace=None, overwrite=False, charset=None):
         if workspace is None:

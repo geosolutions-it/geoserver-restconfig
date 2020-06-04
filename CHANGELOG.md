@@ -1,5 +1,14 @@
 # Change Log
 
+## 2.0.4 [2020-06-03]
+
+<li> 2020-06-04: Piotr Dankowski <a href="https://github.com/GeoNode/geoserver-restconfig/commit/22d9a6822f08204f0ea09004cc011fcaed0dacf4" target="blank"> remove version from body request</a></li> 
+<li> 2020-06-04: Piotr Dankowski <a href="https://github.com/GeoNode/geoserver-restconfig/commit/c088564bcb3d0083ad09c80a759d5374cd82d58f" target="blank"> dynamic style types</a></li> 
+<li> 2020-06-03: afabiani <a href="https://github.com/GeoNode/geoserver-restconfig/commit/8bc81f7e9dfa6dae320df92845bbeaae2e8ea42c" target="blank">  - Travis fix</a></li>
+<li> 2020-06-03: Piotr Dankowski <a href="https://github.com/GeoNode/geoserver-restconfig/commit/33db14fe6a384c00c3dfa1c5905ad9a8a5cda35a" target="blank"> fix GS rest call</a></li>
+
+[Full Changelog](https://github.com/GeoNode/geoserver-restconfig/compare/2.0.2...2.0.4)
+
 ## 2.0.2 [2020-03-30]
 
 <li> 2020-03-30: "Create Style" compliancy with GeoServer 2.16.x / 2.17.x</li>
