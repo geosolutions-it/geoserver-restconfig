@@ -245,6 +245,8 @@ class Catalog(object):
 
         def parse_or_raise(xml):
             try:
+                if not isinstance(xml, string_types):
+                    xml = xml.decode()
                 return XML(xml)
             except (ExpatError, SyntaxError) as e:
                 msg = "GeoServer gave non-XML response for [GET %s]: %s"
@@ -325,7 +327,7 @@ class Catalog(object):
             else:
                 workspaces = self.get_workspaces(names=workspaces)
         else:
-            workspaces = []
+            workspaces = self.get_workspaces()
 
         stores = []
         for ws in workspaces:
@@ -340,9 +342,13 @@ class Catalog(object):
             names = []
         elif isinstance(names, string_types):
             names = [s.strip() for s in names.split(',') if s.strip()]
+        elif not isinstance(names, list):
+            names = [names]
+            if len(names) and not isinstance(names[0], string_types):
+                names = [_n.name for _n in names]
 
         if stores and names:
-            return ([store for store in stores if store.name in names])
+            return [_s for _s in stores if _s.name in names]
 
         return stores
 
@@ -537,7 +543,7 @@ class Catalog(object):
         try:
             resp = self.http_request(url, method='put', data=upload_data, headers=headers)
             if resp.status_code != 201:
-                raise FailedRequestError('Failed to create ImageMosaic {} : {}, {}'.format(name, resp.status_code, resp.text))
+                raise FailedRequestError('Failed to create ImageMosaic {} : {}, {}'.format(url, resp.status_code, resp.text))
             self._cache.clear()
         finally:
             if hasattr(upload_data, "close"):
@@ -898,9 +904,11 @@ class Catalog(object):
         names, stores and workspaces can be provided as a comma delimited strings or as arrays, and are used for filtering.
         Will always return an array.
         '''
+        if workspaces and not isinstance(workspaces, list):
+            workspaces = [workspaces]
+
         if not stores:
             _stores = self.get_stores(
-                names=names,
                 workspaces=workspaces
             )
         elif not isinstance(stores, list):
@@ -912,18 +920,23 @@ class Catalog(object):
         for s in _stores:
             try:
                 if isinstance(s, string_types):
-                    s = self.get_store(
-                        s,
-                        workspace=workspaces[0] if workspaces else None
-                    )
-                resources.extend(s.get_resources())
+                    if workspaces:
+                        for w in workspaces:
+                            if self.get_store(s, workspace=w):
+                                s = self.get_store(s, workspace=w)
+                                if s:
+                                    resources.extend(s.get_resources())
+                    else:
+                        s = self.get_store(s)
+                        if s:
+                            resources.extend(s.get_resources())
+                else:
+                    resources.extend(s.get_resources())
             except FailedRequestError:
                 continue
 
-        if names is None:
-            names = []
-        elif isinstance(names, string_types):
-            names = [s.strip() for s in names.split(',') if s.strip()]
+        if isinstance(names, string_types):
+            names = [s.strip() for s in names.split(',')]
 
         if resources and names:
             return ([resource for resource in resources if resource.name in names])
