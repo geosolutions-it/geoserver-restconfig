@@ -1058,7 +1058,7 @@ class Catalog(object):
             # Add global styles
             url = "{}/styles.xml".format(self.service_url)
             styles = self.get_xml(url)
-            all_styles.extend([Style(self, s.find('name').text) for s in styles.findall("style")])
+            all_styles.extend(self.__build_style_list(styles))
             workspaces = []
         elif isinstance(workspaces, string_types):
             workspaces = [s.strip() for s in workspaces.split(',') if s.strip()]
@@ -1082,8 +1082,7 @@ class Catalog(object):
                     continue
                 else:
                     raise FailedRequestError("Failed to get styles: {}".format(e))
-
-            all_styles.extend([Style(self, s.find("name").text, _name(ws)) for s in styles.findall("style")])
+            all_styles.extend(self.__build_style_list(styles, ws))
 
         if names is None:
             names = []
@@ -1093,6 +1092,15 @@ class Catalog(object):
         if all_styles and names:
             return ([style for style in all_styles if style.name in names])
 
+        return all_styles
+
+    def __build_style_list(self, styles_tree, ws=None):
+        all_styles = []
+        for s in styles_tree.findall("style"):
+            style_format = self.get_xml(s[1].attrib.get('href')).find('format').text
+            style_version = self.get_xml(s[1].attrib.get('href')).find('languageVersion').find(
+                'version').text.replace('.', '')[:-1]
+            all_styles.append(Style(self, s.find("name").text, _name(ws), style_format + style_version))
         return all_styles
 
     def get_style(self, name, workspace=None):

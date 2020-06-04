@@ -19,11 +19,13 @@ except ImportError:
 
 
 class Style(ResourceInfo):
-    supported_formats = ["sld10", "sld11", "zip"]
+    supported_formats = ["sld10", "sld11", "zip10", "css10"]
     content_types = {
         "sld10": "application/vnd.ogc.sld+xml",
         "sld11": "application/vnd.ogc.se+xml",
-        "zip": "application/zip"
+        "zip10": "application/zip",
+        "css10": "application/vnd.geoserver.geocss+css",
+
     }
 
     def __init__(self, catalog, name, workspace=None, style_format="sld10"):
@@ -112,6 +114,12 @@ class Style(ResourceInfo):
     @property
     def sld_body(self):
         resp = self.catalog.http_request(self.body_href)
+        return resp.content
+
+    @property
+    def body(self):
+        # [:-2] remove version tag from type. GeoServer does not accept it
+        resp = self.catalog.http_request(self._build_href('.{}'.format(self.style_format[:-2])))
         return resp.content
 
     def update_body(self, body):
