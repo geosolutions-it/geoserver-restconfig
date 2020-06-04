@@ -13,7 +13,12 @@ try:
 except:
     from urlparse import urljoin
 
-from geoserver.support import ResourceInfo, xml_property, write_bool, workspace_from_url
+from geoserver.support import (
+    ResourceInfo,
+    xml_property,
+    write_bool,
+    workspace_from_url,
+    resource_from_url)
 from geoserver.style import Style
 
 
@@ -134,7 +139,9 @@ class Layer(ResourceInfo):
         if self.gs_version >= "2.13":
             if ":" in name:
                 ws_name, name = name.split(':')
-        return self.catalog.get_resources(names=name, workspaces=ws_name)[0]
+        store_name = resource_from_url(atom_link[0].get('href'), ws_name)
+        _resources = self.catalog.get_resources(names=[name], stores=[store_name], workspaces=[ws_name])
+        return _resources[0] if len(_resources) > 0 else _resources
 
     def _get_default_style(self):
         if 'default_style' in self.dirty:

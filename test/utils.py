@@ -65,7 +65,7 @@ DBPARAMS = dict(
     dbtype=os.getenv("DBTYPE", "postgis"),
     database=os.getenv("DATABASE", "db"),
     user=os.getenv("DBUSER", "postgres"),
-    passwd=os.getenv("DBPASS", "password")
+    passwd=os.getenv("DBPASS", "postgres")
 )
 print('*** GSPARAMS ***')
 print(GSPARAMS)

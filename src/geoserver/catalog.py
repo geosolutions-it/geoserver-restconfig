@@ -8,8 +8,9 @@
 # LICENSE.txt file in the root directory of this source tree.
 #
 #########################################################################
-from datetime import datetime, timedelta
+
 import logging
+from datetime import datetime, timedelta
 from geoserver.layer import Layer
 from geoserver.resource import FeatureType
 from geoserver.store import (
@@ -32,6 +33,7 @@ from xml.parsers.expat import ExpatError
 import requests
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
+from six import string_types
 
 try:
     from past.builtins import basestring
@@ -77,9 +79,9 @@ def _name(named):
          as long as it's a string
        * otherwise, we raise a ValueError
     """
-    if isinstance(named, basestring) or named is None:
+    if isinstance(named, string_types) or named is None:
         return named
-    elif hasattr(named, 'name') and isinstance(named.name, basestring):
+    elif hasattr(named, 'name') and isinstance(named.name, string_types):
         return named.name
     else:
         raise ValueError("Can't interpret %s as a name or a configuration object" % named)
@@ -100,14 +102,15 @@ class Catalog(object):
     - Namespaces, which provide unique identifiers for resources
     """
 
-    def __init__(self, service_url, username="admin", password="geoserver", validate_ssl_certificate=True, access_token=None):
+    def __init__(self, service_url, username="admin", password="geoserver", validate_ssl_certificate=True, access_token=None, retries=3, backoff_factor=0.9):
         self.service_url = service_url.strip("/")
         self.username = username
         self.password = password
         self.validate_ssl_certificate = validate_ssl_certificate
         self.access_token = access_token
-        self.setup_connection()
-
+        self.retries = retries
+        self.backoff_factor = backoff_factor
+        self.setup_connection(retries=self.retries, backoff_factor=self.backoff_factor)
         self._cache = {}
         self._version = None
 
@@ -121,20 +124,21 @@ class Catalog(object):
     def __setstate__(self, state):
         '''restore http connection upon unpickling'''
         self.__dict__.update(state)
-        self.setup_connection()
+        self.setup_connection(retries=self.retries, backoff_factor=self.backoff_factor)
 
-    def setup_connection(self):
+    def setup_connection(self, retries=3, backoff_factor=0.9):
         self.client = requests.session()
         self.client.verify = self.validate_ssl_certificate
         parsed_url = urlparse(self.service_url)
         retry = Retry(
-            total = 6,
-            status = 6,
-            backoff_factor = 0.9,
+            total = retries or self.retries,
+            status = retries or self.retries,
+            read = retries or self.retries,
+            connect = retries or self.retries,
+            backoff_factor = backoff_factor or self.backoff_factor,
             status_forcelist = [502, 503, 504],
             method_whitelist = set(['HEAD', 'TRACE', 'GET', 'PUT', 'POST', 'OPTIONS', 'DELETE'])
         )
-
         self.client.mount("{}://".format(parsed_url.scheme), HTTPAdapter(max_retries=retry))
 
     def http_request(self, url, data=None, method='get', headers={}):
@@ -168,7 +172,10 @@ class Catalog(object):
         resp = self.http_request(url)
         version = None
         if resp.status_code == 200:
-            dom = XML(resp.content)
+            content = resp.content
+            if isinstance(content, bytes):
+                content = content.decode('UTF-8')
+            dom = XML(content)
             resources = dom.findall("resource")
             for resource in resources:
                 if resource.attrib["name"] == "GeoServer":
@@ -238,6 +245,8 @@ class Catalog(object):
 
         def parse_or_raise(xml):
             try:
+                if not isinstance(xml, string_types):
+                    xml = xml.decode()
                 return XML(xml)
             except (ExpatError, SyntaxError) as e:
                 msg = "GeoServer gave non-XML response for [GET %s]: %s"
@@ -250,8 +259,11 @@ class Catalog(object):
         else:
             resp = self.http_request(rest_url)
             if resp.status_code == 200:
-                self._cache[rest_url] = (datetime.now(), resp.content)
-                return parse_or_raise(resp.content)
+                content = resp.content
+                if isinstance(content, bytes):
+                    content = content.decode('UTF-8')
+                self._cache[rest_url] = (datetime.now(), content)
+                return parse_or_raise(content)
             else:
                 raise FailedRequestError(resp.content)
 
@@ -295,8 +307,6 @@ class Catalog(object):
     def _return_first_item(self, _list):
         if len(_list) == 0:
             return None
-        elif len(_list) > 1:
-            raise AmbiguousRequestError("Multiple items found")
         else:
             return _list[0]
 
@@ -317,7 +327,7 @@ class Catalog(object):
             else:
                 workspaces = self.get_workspaces(names=workspaces)
         else:
-            workspaces = []
+            workspaces = self.get_workspaces()
 
         stores = []
         for ws in workspaces:
@@ -330,11 +340,15 @@ class Catalog(object):
 
         if names is None:
             names = []
-        elif isinstance(names, basestring):
+        elif isinstance(names, string_types):
             names = [s.strip() for s in names.split(',') if s.strip()]
+        elif not isinstance(names, list):
+            names = [names]
+            if len(names) and not isinstance(names[0], string_types):
+                names = [_n.name for _n in names]
 
         if stores and names:
-            return ([store for store in stores if store.name in names])
+            return [_s for _s in stores if _s.name in names]
 
         return stores
 
@@ -348,7 +362,7 @@ class Catalog(object):
         return self._return_first_item(stores)
 
     def create_datastore(self, name, workspace=None):
-        if isinstance(workspace, basestring):
+        if isinstance(workspace, string_types):
             workspace = self.get_workspaces(names=workspace)[0]
         elif workspace is None:
             workspace = self.get_default_workspace()
@@ -381,7 +395,7 @@ class Catalog(object):
         return self.get_layer(name)
 
     def add_data_to_store(self, store, name, data, workspace=None, overwrite = False, charset = None):
-        if isinstance(store, basestring):
+        if isinstance(store, string_types):
             store = self.get_stores(names=store, workspaces=[workspace])[0]
         if workspace is not None:
             workspace = _name(workspace)
@@ -425,7 +439,6 @@ class Catalog(object):
                     raise FailedRequestError('Failed to add data to store {} : {}, {}'.format(store, resp.status_code, resp.text))
                 self._cache.clear()
         finally:
-            # os.unlink(bundle)
             pass
 
     def create_featurestore(self, name, data, workspace=None, overwrite=False, charset=None):
@@ -473,7 +486,6 @@ class Catalog(object):
             self._cache.clear()
         finally:
             file_obj.close()
-            os.unlink(archive)
 
     def create_imagemosaic(self, name, data, configure='first', workspace=None, overwrite=False, charset=None):
         if workspace is None:
@@ -498,7 +510,7 @@ class Catalog(object):
         if hasattr(data, 'read'):
             # Adding this check only to pass tests. We should drop support for passing a file object
             upload_data = data
-        elif isinstance(data, basestring):
+        elif isinstance(data, string_types):
             if os.path.splitext(data)[-1] == ".zip":
                 upload_data = open(data, 'rb')
             else:
@@ -529,7 +541,7 @@ class Catalog(object):
         try:
             resp = self.http_request(url, method='put', data=upload_data, headers=headers)
             if resp.status_code != 201:
-                raise FailedRequestError('Failed to create ImageMosaic {} : {}, {}'.format(name, resp.status_code, resp.text))
+                raise FailedRequestError('Failed to create ImageMosaic {} : {}, {}'.format(url, resp.status_code, resp.text))
             self._cache.clear()
         finally:
             if hasattr(upload_data, "close"):
@@ -652,7 +664,7 @@ class Catalog(object):
 
         params = dict()
         workspace_name = workspace
-        if isinstance(store, basestring):
+        if isinstance(store, string_types):
             store_name = store
         else:
             store_name = store.name
@@ -690,7 +702,7 @@ class Catalog(object):
         params = dict()
 
         workspace_name = workspace
-        if isinstance(store, basestring):
+        if isinstance(store, string_types):
             store_name = store
         else:
             store_name = store.name
@@ -741,7 +753,7 @@ class Catalog(object):
             params['offset'] = offset
 
         workspace_name = workspace
-        if isinstance(store, basestring):
+        if isinstance(store, string_types):
             store_name = store
         else:
             store_name = store.name
@@ -890,6 +902,9 @@ class Catalog(object):
         names, stores and workspaces can be provided as a comma delimited strings or as arrays, and are used for filtering.
         Will always return an array.
         '''
+        if workspaces and not isinstance(workspaces, list):
+            workspaces = [workspaces]
+
         if not stores:
             _stores = self.get_stores(
                 workspaces=workspaces
@@ -902,19 +917,24 @@ class Catalog(object):
         resources = []
         for s in _stores:
             try:
-                if isinstance(s, basestring):
-                    s = self.get_store(
-                        s,
-                        workspace=workspaces[0] if workspaces else None
-                    )
-                resources.extend(s.get_resources())
+                if isinstance(s, string_types):
+                    if workspaces:
+                        for w in workspaces:
+                            if self.get_store(s, workspace=w):
+                                s = self.get_store(s, workspace=w)
+                                if s:
+                                    resources.extend(s.get_resources())
+                    else:
+                        s = self.get_store(s)
+                        if s:
+                            resources.extend(s.get_resources())
+                else:
+                    resources.extend(s.get_resources())
             except FailedRequestError:
                 continue
 
-        if names is None:
-            names = []
-        elif isinstance(names, basestring):
-            names = [s.strip() for s in names.split(',') if s.strip()]
+        if isinstance(names, string_types):
+            names = [s.strip() for s in names.split(',')]
 
         if resources and names:
             return ([resource for resource in resources if resource.name in names])
@@ -943,7 +963,7 @@ class Catalog(object):
             return None
 
     def get_layers(self, resource=None):
-        if isinstance(resource, basestring):
+        if isinstance(resource, string_types):
             ws_name = None
             if self.get_short_version() >= "2.13":
                 if ":" in resource:
@@ -977,7 +997,7 @@ class Catalog(object):
             groups = self.get_xml(url)
             layergroups.extend([LayerGroup(self, g.find("name").text, None) for g in groups.findall("layerGroup")])
             workspaces = []
-        elif isinstance(workspaces, basestring):
+        elif isinstance(workspaces, string_types):
             workspaces = [s.strip() for s in workspaces.split(',') if s.strip()]
         elif isinstance(workspaces, Workspace):
             workspaces = [workspaces]
@@ -1000,7 +1020,7 @@ class Catalog(object):
 
         if names is None:
             names = []
-        elif isinstance(names, basestring):
+        elif isinstance(names, string_types):
             names = [s.strip() for s in names.split(',') if s.strip()]
 
         if layergroups and names:
@@ -1036,9 +1056,9 @@ class Catalog(object):
             # Add global styles
             url = "{}/styles.xml".format(self.service_url)
             styles = self.get_xml(url)
-            all_styles.extend([Style(self, s.find('name').text) for s in styles.findall("style")])
+            all_styles.extend(self.__build_style_list(styles))
             workspaces = []
-        elif isinstance(workspaces, basestring):
+        elif isinstance(workspaces, string_types):
             workspaces = [s.strip() for s in workspaces.split(',') if s.strip()]
         elif isinstance(workspaces, Workspace):
             workspaces = [workspaces]
@@ -1060,16 +1080,32 @@ class Catalog(object):
                     continue
                 else:
                     raise FailedRequestError("Failed to get styles: {}".format(e))
-
-            all_styles.extend([Style(self, s.find("name").text, _name(ws)) for s in styles.findall("style")])
+            all_styles.extend(self.__build_style_list(styles, ws))
 
         if names is None:
             names = []
-        elif isinstance(names, basestring):
+        elif isinstance(names, string_types):
             names = [s.strip() for s in names.split(',') if s.strip()]
 
         if all_styles and names:
             return ([style for style in all_styles if style.name in names])
+
+        return all_styles
+
+    def __build_style_list(self, styles_tree, ws=None):
+        all_styles = []
+        for s in styles_tree.findall("style"):
+            try:
+                style_format = self.get_xml(s[1].attrib.get('href')).find('format').text
+                style_version = self.get_xml(s[1].attrib.get('href')).find('languageVersion').find(
+                    'version').text.replace('.', '')[:-1]
+                all_styles.append(
+                    Style(self, s.find("name").text, _name(ws), style_format + style_version)
+                )
+            except Exception:
+                all_styles.append(
+                    Style(self, s.find('name').text, _name(ws))
+                )
 
         return all_styles
 
@@ -1120,7 +1156,13 @@ class Catalog(object):
 
             resp = self.http_request(body_href, method='put', data=data, headers=headers)
             if resp.status_code not in (200, 201, 202):
-                raise FailedRequestError('Failed to create style {} : {}, {}'.format(name, resp.status_code, resp.text))
+                body_href = os.path.splitext(style.body_href)[0] + '.xml'
+                if raw:
+                    body_href += "?raw=true"
+
+                resp = self.http_request(body_href, method='put', data=data, headers=headers)
+                if resp.status_code not in (200, 201, 202):
+                    raise FailedRequestError('Failed to create style {} : {}, {}'.format(name, resp.status_code, resp.text))
 
             self._cache.pop(style.href, None)
             self._cache.pop(style.body_href, None)
@@ -1156,7 +1198,7 @@ class Catalog(object):
         '''
         if names is None:
             names = []
-        elif isinstance(names, basestring):
+        elif isinstance(names, string_types):
             names = [s.strip() for s in names.split(',') if s.strip()]
 
         data = self.get_xml("{}/workspaces.xml".format(self.service_url))
