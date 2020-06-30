@@ -138,7 +138,7 @@ class Layer(ResourceInfo):
         ws_name = workspace_from_url(atom_link[0].get('href'))
         if self.gs_version >= "2.13":
             if ":" in name:
-                ws_name, name = name.split(':')
+                ws_name, name = name.split(':', 1)
         store_name = resource_from_url(atom_link[0].get('href'), ws_name)
         _resources = self.catalog.get_resources(names=[name], stores=[store_name], workspaces=[ws_name])
         return _resources[0] if len(_resources) > 0 else _resources
