@@ -1045,7 +1045,7 @@ class Catalog(object):
         else:
             return UnsavedLayerGroup(self, name, layers, styles, bounds, mode, abstract, title, workspace)
 
-    def get_styles(self, names=None, workspaces=None):
+    def get_styles(self, names=None, workspaces=None, recursive=False):
         '''
         names and workspaces can be provided as a comma delimited strings or as arrays, and are used for filtering.
         If no workspaces are provided, will return all styles in the catalog (global and workspace specific).
@@ -1056,7 +1056,7 @@ class Catalog(object):
             # Add global styles
             url = "{}/styles.xml".format(self.service_url)
             styles = self.get_xml(url)
-            all_styles.extend(self.__build_style_list(styles))
+            all_styles += self.__build_style_list(styles, recursive=recursive)
             workspaces = []
         elif isinstance(workspaces, string_types):
             workspaces = [s.strip() for s in workspaces.split(',') if s.strip()]
@@ -1080,7 +1080,7 @@ class Catalog(object):
                     continue
                 else:
                     raise FailedRequestError("Failed to get styles: {}".format(e))
-            all_styles.extend(self.__build_style_list(styles, ws))
+            all_styles += self.__build_style_list(styles, workspace=ws, recursive=recursive)
 
         if names is None:
             names = []
@@ -1092,21 +1092,25 @@ class Catalog(object):
 
         return all_styles
 
-    def __build_style_list(self, styles_tree, ws=None):
-        all_styles = []
+    def __build_style_list(self, styles_tree, workspace=None, recursive=False):
+        all_styles = []        
         for s in styles_tree.findall("style"):
             try:
-                style_format = self.get_xml(s[1].attrib.get('href')).find('format').text
-                style_version = self.get_xml(s[1].attrib.get('href')).find('languageVersion').find(
-                    'version').text.replace('.', '')[:-1]
-                all_styles.append(
-                    Style(self, s.find("name").text, _name(ws), style_format + style_version)
-                )
+                if recursive:
+                    style_format = self.get_xml(s[1].attrib.get('href')).find('format').text
+                    style_version = self.get_xml(s[1].attrib.get('href')).find('languageVersion').find(
+                        'version').text.replace('.', '')[:-1]
+                    all_styles.append(
+                        Style(self, s.find("name").text, _name(workspace), style_format + style_version)
+                    )
+                else:
+                    all_styles.append(
+                        Style(self, s.find('name').text, _name(workspace))
+                    )
             except Exception:
                 all_styles.append(
-                    Style(self, s.find('name').text, _name(ws))
+                    Style(self, s.find('name').text, _name(workspace))
                 )
-
         return all_styles
 
     def get_style(self, name, workspace=None):
