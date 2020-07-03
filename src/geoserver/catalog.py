@@ -914,6 +914,9 @@ class Catalog(object):
         else:
             _stores = stores
 
+        if isinstance(names, string_types):
+            names = [s.strip() for s in names.split(',')]
+
         resources = []
         for s in _stores:
             try:
@@ -923,18 +926,32 @@ class Catalog(object):
                             if self.get_store(s, workspace=w):
                                 s = self.get_store(s, workspace=w)
                                 if s:
-                                    resources.extend(s.get_resources())
+                                    if names:
+                                        for name in names:
+                                            _res = s.get_resources(name=name)
+                                            if _res:
+                                                resources.append(_res)
+                                    else:
+                                        resources.extend(s.get_resources())
                     else:
                         s = self.get_store(s)
                         if s:
-                            resources.extend(s.get_resources())
+                            if names:
+                                for name in names:
+                                    _res = s.get_resources(name=name)
+                                    if _res:
+                                        resources.append(_res)
+                            else:
+                                resources.extend(s.get_resources())
+                elif names:
+                    for name in names:
+                        _res = s.get_resources(name=name)
+                        if _res:
+                            resources.append(_res)
                 else:
                     resources.extend(s.get_resources())
             except FailedRequestError:
                 continue
-
-        if isinstance(names, string_types):
-            names = [s.strip() for s in names.split(',')]
 
         if resources and names:
             return ([resource for resource in resources if resource.name in names])
