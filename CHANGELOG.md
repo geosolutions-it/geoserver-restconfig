@@ -1,5 +1,9 @@
 # Change Log
 
+## 2.0.4.6 [2020-07-28]
+
+<li> 2020-07-28: Alessio Fabiani Allow create_imagemosaic to accept a custom coverageName for the ImageMosaic
+
 ## 2.0.4 [2020-06-03]
 
 <li> 2020-06-04: Piotr Dankowski <a href="https://github.com/GeoNode/geoserver-restconfig/commit/22d9a6822f08204f0ea09004cc011fcaed0dacf4" target="blank"> remove version from body request</a></li> 
