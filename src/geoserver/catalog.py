@@ -487,7 +487,7 @@ class Catalog(object):
         finally:
             file_obj.close()
 
-    def create_imagemosaic(self, name, data, configure='first', workspace=None, overwrite=False, charset=None):
+    def create_imagemosaic(self, name, data, configure='first', workspace=None, overwrite=False, charset=None, coverageName=None):
         if workspace is None:
             workspace = self.get_default_workspace()
         workspace = _name(workspace)
@@ -503,7 +503,8 @@ class Catalog(object):
         if configure.lower() not in ('first', 'none', 'all'):
             raise ValueError("configure most be one of: first, none, all")
         params['configure'] = configure.lower()
-
+        if coverageName:
+            params['coverageName'] = coverageName
         store_type = "file.imagemosaic"
         contet_type = "application/zip"
 
