@@ -81,35 +81,46 @@ class Style(ResourceInfo):
 
     @property
     def sld_title(self):
+        named_layer = self._get_sld_dom().find("{http://www.opengis.net/sld}NamedLayer")
         user_style = self._get_sld_dom().find("{http://www.opengis.net/sld}NamedLayer/{http://www.opengis.net/sld}UserStyle")
         if not user_style:
             user_style = self._get_sld_dom().find("{http://www.opengis.net/sld}UserLayer/{http://www.opengis.net/sld}UserStyle")
 
         title_node = None
-        if user_style:
+        if named_layer:
             try:
                 # it is not mandatory
-                title_node = user_style.find("{http://www.opengis.net/sld}Title")
+                title_node = named_layer.find("{http://www.opengis.net/sld}Title")
             except AttributeError:
-                title_node = None
+                try:
+                    # it is not mandatory
+                    title_node = user_style.find("{http://www.opengis.net/sld}Title")
+                except AttributeError:
+                    pass
 
-        return title_node.text if title_node is not None else None
+        return str(title_node.text) if title_node is not None else None
 
     @property
     def sld_name(self):
+        named_layer = self._get_sld_dom().find("{http://www.opengis.net/sld}NamedLayer")
         user_style = self._get_sld_dom().find("{http://www.opengis.net/sld}NamedLayer/{http://www.opengis.net/sld}UserStyle")
         if not user_style:
             user_style = self._get_sld_dom().find("{http://www.opengis.net/sld}UserLayer/{http://www.opengis.net/sld}UserStyle")
 
         name_node = None
-        if user_style:
+        if named_layer:
             try:
                 # it is not mandatory
-                name_node = user_style.find("{http://www.opengis.net/sld}Name")
+                name_node = named_layer.find("{http://www.opengis.net/sld}Name")
             except AttributeError:
-                name_node = None
+                try:
+                    # it is not mandatory
+                    if user_style and not name_node:
+                        name_node = user_style.find("{http://www.opengis.net/sld}Name")
+                except AttributeError:
+                    pass
 
-        return name_node.text if name_node is not None else None
+        return str(name_node.text) if name_node is not None else None
 
     @property
     def sld_body(self):
