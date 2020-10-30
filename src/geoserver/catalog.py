@@ -1188,6 +1188,7 @@ class Catalog(object):
 
             self._cache.pop(style.href, None)
             self._cache.pop(style.body_href, None)
+            return style
         else:
             raise FailedRequestError('Failed to create style {}'.format(name))
 
