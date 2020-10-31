@@ -3,6 +3,10 @@
 
 ## 2.0.4.7 [2020-10-30]
 
+<li> 2020-10-31: Alessio Fabiani [Hardening] check for empty strings other than 'None' attributes
+
+## 2.0.4.7 [2020-10-30]
+
 <li> 2020-10-30: Alessio Fabiani Make "create_style" returning the style object just created
 <li> 2020-10-30: Alessio Fabiani Parse "sld_name" and "sld_title" from global "NamedLayer" node
 
