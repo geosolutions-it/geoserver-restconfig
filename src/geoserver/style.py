@@ -68,7 +68,7 @@ class Style(ResourceInfo):
             path_parts.append(self.name + extension)
         else:
             query['name'] = self.name
-        if self.workspace is not None:
+        if self.workspace is not None and self.workspace:
             path_parts = ["workspaces", getattr(self.workspace, 'name', self.workspace)] + path_parts
         return build_url(self.catalog.service_url, path_parts, query)
 

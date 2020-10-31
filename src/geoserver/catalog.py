@@ -397,7 +397,7 @@ class Catalog(object):
     def add_data_to_store(self, store, name, data, workspace=None, overwrite = False, charset = None):
         if isinstance(store, string_types):
             store = self.get_stores(names=store, workspaces=[workspace])[0]
-        if workspace is not None:
+        if workspace is not None and workspace:
             workspace = _name(workspace)
             assert store.workspace.name == workspace, "Specified store (%s) is not in specified workspace (%s)!" % (store, workspace)
         else:
@@ -412,7 +412,7 @@ class Catalog(object):
         params = dict()
         if overwrite:
             params["update"] = "overwrite"
-        if charset is not None:
+        if charset is not None and charset:
             params["charset"] = charset
         params["filename"] = "{}.zip".format(name)
         params["target"] = "shp"
@@ -453,7 +453,7 @@ class Catalog(object):
                 raise ConflictingDataError(msg)
 
         params = dict()
-        if charset is not None:
+        if charset is not None and charset:
             params['charset'] = charset
         url = build_url(
             self.service_url,
@@ -498,7 +498,7 @@ class Catalog(object):
                 raise ConflictingDataError("There is already a store named {}".format(name))
 
         params = dict()
-        if charset is not None:
+        if charset is not None and charset:
             params['charset'] = charset
         if configure.lower() not in ('first', 'none', 'all'):
             raise ValueError("configure most be one of: first, none, all")
@@ -746,11 +746,11 @@ class Catalog(object):
         '''List granules of an imagemosaic'''
         params = dict()
 
-        if filter is not None:
+        if filter is not None and filter:
             params['filter'] = filter
-        if limit is not None:
+        if limit is not None and limit:
             params['limit'] = limit
-        if offset is not None:
+        if offset is not None and offset:
             params['offset'] = offset
 
         workspace_name = workspace
@@ -866,7 +866,7 @@ class Catalog(object):
         feature_type.advertised = True
         feature_type.title = name
 
-        if native_name is not None:
+        if native_name is not None and native_name:
             feature_type.native_name = native_name
 
         headers = {
@@ -875,7 +875,7 @@ class Catalog(object):
         }
 
         resource_url = store.resource_url
-        if jdbc_virtual_table is not None:
+        if jdbc_virtual_table is not None and jdbc_virtual_table:
             feature_type.metadata = ({'JDBC_VIRTUAL_TABLE': jdbc_virtual_table})
             params = dict()
             resource_url = build_url(
@@ -1148,7 +1148,7 @@ class Catalog(object):
         else:
             style = None
 
-        if not overwrite and style is not None:
+        if not overwrite and style is not None and style:
             raise ConflictingDataError("There is already a style named %s" % name)
 
         if not style:
@@ -1158,10 +1158,11 @@ class Catalog(object):
                 "Content-type": "application/xml",
                 "Accept": "text/plain"
             }
-            resp = self.http_request(style.create_href, method='post', data=xml, headers=headers)
+            create_url = style.create_href
+            resp = self.http_request(create_url, method='post', data=xml, headers=headers)
             if resp.status_code == 406:
                 headers["Accept"] = "application/xml"
-                resp = self.http_request(style.create_href, method='post', data=xml, headers=headers)
+                resp = self.http_request(create_url, method='post', data=xml, headers=headers)
 
             if resp.status_code not in (200, 201, 202):
                 raise FailedRequestError('Failed to create style {} : {}, {}'.format(name, resp.status_code, resp.text))
@@ -1184,7 +1185,7 @@ class Catalog(object):
 
                 resp = self.http_request(body_href, method='put', data=data, headers=headers)
                 if resp.status_code not in (200, 201, 202):
-                    raise FailedRequestError('Failed to create style {} : {}, {}'.format(name, resp.status_code, resp.text))
+                    raise FailedRequestError('Failed to update style {} : {}, {}'.format(name, resp.status_code, resp.text))
 
             self._cache.pop(style.href, None)
             self._cache.pop(style.body_href, None)
@@ -1253,7 +1254,7 @@ class Catalog(object):
         if hasattr(name, 'name'):
             name = name.name
         workspace = self.get_workspaces(names=name)[0]
-        if workspace is not None:
+        if workspace is not None and workspace:
             headers = {"Content-Type": "application/xml"}
             default_workspace_url = self.service_url + "/workspaces/default.xml"
             data = "<workspace><name>{}</name></workspace>".format(name)

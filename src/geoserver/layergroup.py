@@ -107,7 +107,7 @@ class LayerGroup(ResourceInfo):
     @property
     def href(self):
         path_parts = "layergroups/{}.xml".format(self.name)
-        if self.workspace is not None:
+        if self.workspace is not None and self.workspace:
             workspace_name = getattr(self.workspace, 'name', self.workspace)
             path_parts = "workspaces/{}/{}".format(workspace_name, path_parts)
         return urljoin(
@@ -167,7 +167,7 @@ class UnsavedLayerGroup(LayerGroup):
     def href(self):
         query = {'name': self.name}
         path_parts = ['layergroups']
-        if self.workspace is not None:
+        if self.workspace is not None and self.workspace:
             workspace_name = getattr(self.workspace, 'name', self.workspace)
             path_parts = ["workspaces", workspace_name] + path_parts
         return build_url(self.catalog.service_url, path_parts, query)

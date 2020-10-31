@@ -131,7 +131,7 @@ def key_value_pairs(node):
 def write_string(name):
     def write(builder, value):
         builder.start(name, dict())
-        if value is not None:
+        if value is not None and value:
             builder.data(value)
         builder.end(name)
     return write
@@ -290,7 +290,7 @@ def bbox_xml(builder, box):
     builder.start("maxy", dict())
     builder.data(str(maxy))
     builder.end("maxy")
-    if crs is not None:
+    if crs is not None and crs:
         builder.start("crs", {"class": "projected"})
         builder.data(crs)
         builder.end("crs")
@@ -533,15 +533,15 @@ def jdbc_virtual_table(builder, metadata):
         if metadata.geometry is not None:
             g = metadata.geometry
             builder.start("geometry", dict())
-            if g.name is not None:
+            if g.name is not None and g.name:
                 builder.start("name", dict())
                 builder.data(g.name)
                 builder.end("name")
-            if g.type is not None:
+            if g.type is not None and g.type:
                 builder.start("type", dict())
                 builder.data(g.type)
                 builder.end("type")
-            if g.srid is not None:
+            if g.srid is not None and g.srid:
                 builder.start("srid", dict())
                 builder.data(g.srid)
                 builder.end("srid")

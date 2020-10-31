@@ -20,7 +20,7 @@ groupname = "Wayne"
 prefix = "wayne_"
 
 def resolve(layer, style):
-    if style is not None:
+    if style is not None and style:
         return (layer, style)
     else:
         return (layer, demo.get_layer(layer).default_style.name)

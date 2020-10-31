@@ -40,17 +40,17 @@ def _read_attribution(node):
     url = node.find("logoURL")
     type = node.find("logoType")
 
-    if title is not None:
+    if title is not None and title:
         title = title.text
-    if width is not None:
+    if width is not None and width:
         width = width.text
-    if height is not None:
+    if height is not None and height:
         height = height.text
-    if href is not None:
+    if href is not None and href:
         href = href.text
-    if url is not None:
+    if url is not None and url:
         url = url.text
-    if type is not None:
+    if type is not None and type:
         type = type.text
 
     return _attribution(title, width, height, href, url, type)
@@ -58,27 +58,27 @@ def _read_attribution(node):
 
 def _write_attribution(builder, attr):
     builder.start("attribution", dict())
-    if attr.title is not None:
+    if attr.title is not None and attr.title:
         builder.start("title", dict())
         builder.data(attr.title)
         builder.end("title")
-    if attr.width is not None:
+    if attr.width is not None and attr.width:
         builder.start("logoWidth", dict())
         builder.data(attr.width)
         builder.end("logoWidth")
-    if attr.height is not None:
+    if attr.height is not None and attr.height:
         builder.start("logoHeight", dict())
         builder.data(attr.height)
         builder.end("logoHeight")
-    if attr.href is not None:
+    if attr.href is not None and attr.href:
         builder.start("href", dict())
         builder.data(attr.href)
         builder.end("href")
-    if attr.url is not None:
+    if attr.url is not None and attr.url:
         builder.start("logoURL", dict())
         builder.data(attr.url)
         builder.end("logoURL")
-    if attr.type is not None:
+    if attr.type is not None and attr.type:
         builder.start("logoType", dict())
         builder.data(attr.type)
         builder.end("logoType")
@@ -98,7 +98,7 @@ def _write_style_element(builder, name):
 
 def _write_default_style(builder, name):
     builder.start("defaultStyle", dict())
-    if name is not None:
+    if name is not None and name:
         _write_style_element(builder, name)
     builder.end("defaultStyle")
 
