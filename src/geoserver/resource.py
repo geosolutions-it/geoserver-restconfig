@@ -275,11 +275,11 @@ class WmsLayer(ResourceInfo):
 
     @property
     def href(self):
+        # Removed Store from this due to error in the Rest API when including store
         return urljoin(
             "{}/".format(self.catalog.service_url),
-            "workspaces/{}/wmsstores/{}/wmslayers/{}.xml".format(
+            "workspaces/{}/wmslayers/{}.xml".format(
                 self.workspace.name,
-                self.store.name,
                 self.name
             )
         )
