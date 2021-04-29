@@ -1,14 +1,18 @@
 
 # Change Log
 
+## 2.0.4.9 [2021-04-27]
+
+<li> 2021-04-27: Giovanni Allegri Wrong parsing of style title #15</li>
+
+## 2.0.4.8 [2020-10-30]
+
+<li> 2020-10-31: Alessio Fabiani [Hardening] check for empty strings other than 'None' attributes</li>
+
 ## 2.0.4.7 [2020-10-30]
 
-<li> 2020-10-31: Alessio Fabiani [Hardening] check for empty strings other than 'None' attributes
-
-## 2.0.4.7 [2020-10-30]
-
-<li> 2020-10-30: Alessio Fabiani Make "create_style" returning the style object just created
-<li> 2020-10-30: Alessio Fabiani Parse "sld_name" and "sld_title" from global "NamedLayer" node
+<li> 2020-10-30: Alessio Fabiani Make "create_style" returning the style object just created</li>
+<li> 2020-10-30: Alessio Fabiani Parse "sld_name" and "sld_title" from global "NamedLayer" node</li>
 
 ## 2.0.4.6 [2020-07-28]
 
