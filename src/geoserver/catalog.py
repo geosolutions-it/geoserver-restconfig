@@ -141,7 +141,7 @@ class Catalog(object):
         )
         self.client.mount("{}://".format(parsed_url.scheme), HTTPAdapter(max_retries=retry))
 
-    def http_request(self, url, data=None, method='get', headers={}):
+    def http_request(self, url, data=None, method='get', headers={}, files=None):
         req_method = getattr(self.client, method.lower())
 
         if self.access_token:
@@ -152,14 +152,13 @@ class Catalog(object):
             params = urlencode(params)
             url = "{proto}://{address}{path}?{params}".format(proto=parsed_url.scheme, address=parsed_url.netloc,
                                                               path=parsed_url.path, params=params)
-
-            resp = req_method(url, headers=headers, data=data)
-        else:
+        elif self.username and self.password:
             valid_uname_pw = base64.b64encode(
                 ("%s:%s" % (self.username, self.password)).encode("utf-8")).decode("ascii")
             headers['Authorization'] = 'Basic {}'.format(valid_uname_pw)
-            resp = req_method(url, headers=headers, data=data)
-        return resp
+
+        return req_method(url, headers=headers, data=data, files=files)
+
 
     def get_version(self):
         '''obtain the version or just 2.2.x if < 2.3.x

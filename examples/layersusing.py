@@ -20,4 +20,4 @@ def has_the_style(l):
     return (l.default_style.name == style_to_check or
       any(s.name == style_to_check for s in l.styles))
 
-print [l.name for l in cat.get_layers() if has_the_style(l)]
+print([l.name for l in cat.get_layers() if has_the_style(l)])

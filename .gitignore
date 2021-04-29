@@ -6,3 +6,4 @@ include/
 lib/
 lib64
 doc/_build/
+.idea/
