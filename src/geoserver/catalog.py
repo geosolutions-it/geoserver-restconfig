@@ -1069,11 +1069,18 @@ class Catalog(object):
         Will always return an array.
         '''
         all_styles = []
+
+        # Get Names first to speed up recursive queries
+        if names is None:
+            names = []
+        elif isinstance(names, string_types):
+            names = [s.strip() for s in names.split(',') if s.strip()]
+
         if not workspaces:
             # Add global styles
             url = "{}/styles.xml".format(self.service_url)
             styles = self.get_xml(url)
-            all_styles += self.__build_style_list(styles, recursive=recursive)
+            all_styles += self.__build_style_list(styles, recursive=recursive, names=names)
             workspaces = []
         elif isinstance(workspaces, string_types):
             workspaces = [s.strip() for s in workspaces.split(',') if s.strip()]
@@ -1097,32 +1104,30 @@ class Catalog(object):
                     continue
                 else:
                     raise FailedRequestError("Failed to get styles: {}".format(e))
-            all_styles += self.__build_style_list(styles, workspace=ws, recursive=recursive)
-
-        if names is None:
-            names = []
-        elif isinstance(names, string_types):
-            names = [s.strip() for s in names.split(',') if s.strip()]
+            all_styles += self.__build_style_list(styles, workspace=ws, recursive=recursive, names=names)
 
         if all_styles and names:
             return ([style for style in all_styles if style.name in names])
 
         return all_styles
 
-    def __build_style_list(self, styles_tree, workspace=None, recursive=False):
+    def __build_style_list(self, styles_tree, workspace=None, recursive=False, names=None):
         all_styles = []        
         for s in styles_tree.findall("style"):
             try:
+                style_name = s.find('name').text
+                if names and style_name not in names:
+                    continue
                 if recursive:
-                    style_format = self.get_xml(s[1].attrib.get('href')).find('format').text
-                    style_version = self.get_xml(s[1].attrib.get('href')).find('languageVersion').find(
-                        'version').text.replace('.', '')[:-1]
+                    style_xml = self.get_xml(s[1].attrib.get('href'))
+                    style_format = style_xml.find('format').text
+                    style_version = style_xml.find('languageVersion').find('version').text.replace('.', '')[:-1]
                     all_styles.append(
-                        Style(self, s.find("name").text, _name(workspace), style_format + style_version)
+                        Style(self, style_name, _name(workspace), style_format + style_version)
                     )
                 else:
                     all_styles.append(
-                        Style(self, s.find('name').text, _name(workspace))
+                        Style(self, style_name, _name(workspace))
                     )
             except Exception:
                 all_styles.append(
