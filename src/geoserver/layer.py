@@ -158,7 +158,7 @@ class Layer(ResourceInfo):
         else:
             style_name = element.find('name').text
             ws_name = None
-        atom_link = [n for n in element.getchildren() if 'href' in n.attrib]
+        atom_link = [n for n in element if 'href' in n.attrib]
         if atom_link and ws_name is None:
             ws_name = workspace_from_url(atom_link[0].get("href"))
         return self.catalog.get_styles(names=style_name, workspaces=ws_name)[0]
