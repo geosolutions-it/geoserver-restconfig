@@ -134,7 +134,7 @@ class Layer(ResourceInfo):
         if self.dom is None:
             self.fetch()
         name = self.dom.find("resource/name").text
-        atom_link = [n for n in self.dom.find("resource").getchildren() if 'href' in n.attrib]
+        atom_link = [n for n in self.dom.find("resource") if 'href' in n.attrib]
         ws_name = workspace_from_url(atom_link[0].get('href'))
         if self.gs_version >= "2.13":
             if ":" in name:
