@@ -1,6 +1,12 @@
 
 # Change Log
 
+## 2.0.4.10 [2021-11-10]
+
+<li> 2021-11-10: Giovanni Allegri [Fixes #21] force body style format with headers #22</li>
+<li> 2021-10-25: Guillaume Troupel fix python 3.9+ incompatibility #19</li>
+<li> 2021-04-29: mcldev Fix for WMS Geoserver API error. Request changed to include Files. #17</li>
+
 ## 2.0.4.9 [2021-04-27]
 
 <li> 2021-04-27: Giovanni Allegri Wrong parsing of style title #15</li>
