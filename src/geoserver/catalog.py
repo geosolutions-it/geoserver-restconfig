@@ -548,7 +548,69 @@ class Catalog(object):
                 upload_data.close()
 
         return self.get_stores(names=name, workspaces=[workspace])[0]
+    
+    def create_imagepyramid(self, name, data, configure='first', workspace=None, overwrite=False, charset=None):
+        if workspace is None:
+            workspace = self.get_default_workspace()
+        workspace = _name(workspace)
 
+        if not overwrite:
+            store = self.get_stores(names=name, workspaces=[workspace])
+            if store:
+                raise ConflictingDataError("There is already a store named {}".format(name))
+
+        params = dict()
+        if charset is not None:
+            params['charset'] = charset
+        if configure.lower() not in ('first', 'none', 'all'):
+            raise ValueError("configure most be one of: first, none, all")
+        params['configure'] = configure.lower()
+
+        store_type = "file.imagepyramid"
+        contet_type = "application/zip"
+
+        if hasattr(data, 'read'):
+            # Adding this check only to pass tests. We should drop support for passing a file object
+            upload_data = data
+        elif isinstance(data, string_types):
+            if os.path.splitext(data)[-1] == ".zip":
+                upload_data = open(data, 'rb')
+            else:
+                store_type = "external.imagepyramid"
+                contet_type = "text/plain"
+                upload_data = data if data.startswith("file:") else "file:{data}".format(data=data)
+        else:
+            raise ValueError("ImagePyramid Dataset or directory: {data} is incorrect".format(data=data))
+
+        url = build_url(
+            self.service_url,
+            [
+                "workspaces",
+                workspace,
+                "coveragestores",
+                name,
+                store_type
+            ],
+            params
+        )
+
+        # PUT /workspaces/<ws>/coveragestores/<name>/file.imagepyramid?configure=none
+        headers = {
+            "Content-type": contet_type,
+            "Accept": "application/xml"
+        }
+
+        try:
+            resp = self.http_request(url, method='put', data=upload_data, headers=headers)
+            if resp.status_code != 201:
+                raise FailedRequestError('Failed to create ImagePyramid {} : {}, {}'.format(url, resp.status_code, resp.text))
+            self._cache.clear()
+        finally:
+            if hasattr(upload_data, "close"):
+                upload_data.close()
+
+        return self.get_stores(names=name, workspaces=[workspace])[0]
+    
     def create_coveragestore(self, name, workspace=None, path=None, type='GeoTIFF',
                              create_layer=True, layer_name=None, source_name=None, upload_data=False, contet_type="image/tiff",
                              overwrite=False):
