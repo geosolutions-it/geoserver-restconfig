@@ -73,6 +73,8 @@ def build_url(base, seg, query=None):
 
 def xml_property(path, converter=lambda x: x.text, default=None):
     def getter(self):
+        if hasattr(self, f"_{path}"):
+            return getattr(self, f"_{path}")
         try:
             if path in self.dirty:
                 return self.dirty[path]
@@ -81,13 +83,17 @@ def xml_property(path, converter=lambda x: x.text, default=None):
                     self.fetch()
                 node = self.dom.find(path)
                 if node is not None:
-                    return converter(self.dom.find(path))
+                    res = converter(self.dom.find(path))
+                    if issubclass(type(res), StaticResourceInfo):
+                        setattr(self, f"_{path}", res)
+                    return res
                 return default
         except Exception as e:
             raise AttributeError(e)
 
     def setter(self, value):
         self.dirty[path] = value
+        x = 1
 
     def delete(self):
         self.dirty[path] = None
@@ -127,6 +133,10 @@ def key_value_pairs(node):
         return dict((entry.attrib['key'], entry.text) for entry in node.findall("entry"))
 
 
+def read_string(node):
+    return node.text
+
+
 def write_string(name):
     def write(builder, value):
         builder.start(name, dict())
@@ -134,6 +144,14 @@ def write_string(name):
             builder.data(value)
         builder.end(name)
     return write
+
+
+def read_bool(node):
+    text = node.text
+    if text:
+        return text == "true"
+    else:
+        return None
 
 
 def write_bool(name):
@@ -144,7 +162,33 @@ def write_bool(name):
     return write
 
 
+def read_int(node):
+    text = node.text
+    try:
+        res = int(text)
+        return res
+    except Exception as e:
+        raise ValueError(e)
+
+
 def write_int(name):
+    def write(builder, b):
+        builder.start(name, dict())
+        builder.data(str(b))
+        builder.end(name)
+    return write
+
+
+def read_float(node):
+    text = node.text
+    try:
+        res = float(text)
+        return res
+    except Exception as e:
+        raise ValueError(e)
+
+
+def write_float(name):
     def write(builder, b):
         builder.start(name, dict())
         builder.data(str(b))
@@ -205,21 +249,20 @@ def write_metadata(name):
     return write
 
 
-class ResourceInfo(object):
+class StaticResourceInfo(object):
 
     def __init__(self):
+        self.write_all = True
         self.dom = None
         self.dirty = dict()
 
-    def fetch(self):
-        self.dom = self.catalog.get_xml(self.href)
-
-    def clear(self):
-        self.dirty = dict()
-
-    def refresh(self):
-        self.clear()
-        self.fetch()
+    def dirty_all(self):
+        for key in self.writers.keys():
+            attr = getattr(self, key)
+            if issubclass(type(attr), StaticResourceInfo):
+                attr.dirty_all()
+            else:
+                self.dirty[key] = attr
 
     def serialize(self, builder):
         # GeoServer will disable the resource if we omit the <enabled> tag,
@@ -231,16 +274,50 @@ class ResourceInfo(object):
             self.dirty['advertised'] = self.advertised
 
         for k, writer in self.writers.items():
-            if k in self.dirty:
-                writer(builder, self.dirty[k])
 
-    def message(self):
-        builder = TreeBuilder()
+            attr = getattr(self, k)
+
+            if issubclass(type(attr), StaticResourceInfo) and attr.dirty:
+                attr.serialize_all(builder)
+            else:
+                if k in self.dirty or self.write_all:
+                    val = self.dirty[k] if self.dirty.get(k) else attr
+                    writer(builder, val)
+
+    def serialize_all(self, builder):
         builder.start(self.resource_type, dict())
         self.serialize(builder)
         builder.end(self.resource_type)
+
+    def message(self):
+        builder = TreeBuilder()
+        self.serialize_all(builder)
         msg = tostring(builder.close())
         return msg
+
+
+class ResourceInfo(StaticResourceInfo):
+
+    def __init__(self):
+        self.write_all = False
+        self.dom = None
+        self.dirty = dict()
+
+    def _clear_subclasses(self):
+        sbcs = [k for k, v in vars(self).items() if issubclass(type(v), StaticResourceInfo)]
+        for sbc in sbcs:
+            delattr(self, sbc)
+
+    def fetch(self):
+        self.dom = self.catalog.get_xml(self.href)
+
+    def clear(self):
+        self.dirty = dict()
+        self._clear_subclasses()
+
+    def refresh(self):
+        self.clear()
+        self.fetch()
 
 
 def prepare_upload_bundle(name, data):

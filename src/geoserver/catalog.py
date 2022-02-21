@@ -27,6 +27,7 @@ from geoserver.support import prepare_upload_bundle, build_url
 from geoserver.layergroup import LayerGroup, UnsavedLayerGroup
 from geoserver.workspace import workspace_from_index, Workspace
 from geoserver.security import user_from_index
+from geoserver.settings import GlobalSettings
 import os
 import re
 import base64
@@ -144,7 +145,6 @@ class Catalog(object):
         self.client.mount(f"{parsed_url.scheme}://", HTTPAdapter(max_retries=retry))
 
     def http_request(self, url, data=None, method='get', headers={}, files=None):
-
         req_method = getattr(self.client, method.lower())
 
         if self.access_token:
@@ -289,6 +289,7 @@ class Catalog(object):
         netloc = urlparse(self.service_url).netloc
         rest_url = href._replace(netloc=netloc).geturl()
         data = obj.message()
+        print(data)
 
         headers = {
             "Content-type": content_type,
@@ -1384,7 +1385,6 @@ class Catalog(object):
                 "<newMasterPassword>{new_pwd}</newMasterPassword>"
                 "</masterPassword>").format(old_pwd=old_pwd, new_pwd=new_pwd)
         resp = self.http_request(url, method="put", data=body, headers=headers)
-
         if resp.status_code == 200:
             res = new_pwd
             self.reload()
@@ -1408,3 +1408,6 @@ class Catalog(object):
         else:
             raise FailedRequestError(resp.content)
         return res
+
+    def get_global_settings(self):
+        return GlobalSettings(self)
