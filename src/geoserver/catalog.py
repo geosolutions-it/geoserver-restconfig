@@ -26,6 +26,7 @@ from geoserver.style import Style
 from geoserver.support import prepare_upload_bundle, build_url
 from geoserver.layergroup import LayerGroup, UnsavedLayerGroup
 from geoserver.workspace import workspace_from_index, Workspace
+from geoserver.security import user_from_index
 import os
 import re
 import base64
@@ -256,7 +257,7 @@ class Catalog(object):
             raw_text = cached_response[1]
             return parse_or_raise(raw_text)
         else:
-            resp = self.http_request(rest_url)
+            resp = self.http_request(rest_url, headers={"Accept": "application/xml"})
             if resp.status_code == 200:
                 content = resp.content
                 if isinstance(content, bytes):
@@ -1335,27 +1336,75 @@ class Catalog(object):
 
         return services
 
-    # global services are enabled by default, enabling services in workspaces using rest is broken in geoserver for now
-    # def create_service(self, ogc_type=None, workspace=None):
-    #
-    #     KNOWN_TYPES = ["wms", "wfs", "wcs", "wmts"]
-    #
-    #     if ogc_type is None:
-    #         logger.error("You have to specify OGC Service Type ({types})".format(types=",".join(KNOWN_TYPES)))
-    #         return None
-    #
-    #     if ogc_type.lower() not in KNOWN_TYPES:
-    #         logger.error("Unknown OGC Service Type (known are: {types})".format(types=",".join(KNOWN_TYPES)))
-    #         return None
-    #
-    #     if workspace is None:
-    #         logger.info("Global services are created by default")
-    #
-    #     if ogc_type.lower() == "wms":
-    #         raise NotImplementedError()
-    #     elif ogc_type.lower() == "wfs":
-    #         raise NotImplementedError()
-    #     elif ogc_type.lower() == "wcs":
-    #         raise NotImplementedError()
-    #     elif ogc_type.lower() == "wmts":
-    #         raise NotImplementedError()
+    def get_users(self, names=None):
+        '''
+          Returns a list of users in the catalog.
+          If names is specified, will only return users that match.
+          names can either be a comma delimited string or an array.
+          Will return an empty list if no users are found (unlikely).
+        '''
+        if names is None:
+            names = []
+        elif isinstance(names, string_types):
+            names = [s.strip() for s in names.split(',') if s.strip()]
+
+        data = self.get_xml(f"{self.service_url}/security/usergroup/users/")
+        users = []
+        users.extend([user_from_index(self, node) for node in data.findall("user")])
+
+        if users and names:
+            return ([ws for ws in users if ws.name in names])
+
+        return users
+
+    def get_master_pwd(self):
+        url = f"{self.service_url}/security/masterpw.xml"
+        resp = self.http_request(url)
+        masterpwd = None
+        if resp.status_code == 200:
+            content = resp.content
+            if isinstance(content, bytes):
+                content = content.decode('UTF-8')
+            dom = XML(content)
+            masterpwd = dom.find("oldMasterPassword").text if dom.find("oldMasterPassword") is not None else None
+        else:
+            raise FailedRequestError(resp.content)
+
+        return masterpwd
+
+    def set_master_pwd(self, new_pwd):
+        old_pwd = self.get_master_pwd()
+        if old_pwd == new_pwd:
+            return new_pwd
+
+        headers = {"Content-Type": "application/xml"}
+        url = f"{self.service_url}/security/masterpw.xml"
+        body = ("<masterPassword>"
+                "<oldMasterPassword>{old_pwd}</oldMasterPassword>"
+                "<newMasterPassword>{new_pwd}</newMasterPassword>"
+                "</masterPassword>").format(old_pwd=old_pwd, new_pwd=new_pwd)
+        resp = self.http_request(url, method="put", data=body, headers=headers)
+
+        if resp.status_code == 200:
+            res = new_pwd
+            self.reload()
+        else:
+            raise FailedRequestError(resp.content)
+        return res
+
+    def set_my_pwd(self, new_pwd):
+        headers = {"Content-Type": "application/xml"}
+        url = f"{self.service_url}/security/self/password.xml"
+        body = ("<userPassword>"
+                "<newPassword>{new_pwd}</newPassword>"
+                "</userPassword>").format(new_pwd=new_pwd)
+        resp = self.http_request(url, method="put", data=body, headers=headers)
+
+        if resp.status_code == 200:
+            res = new_pwd
+            self.reload()
+            self.password = new_pwd
+            self.reload()
+        else:
+            raise FailedRequestError(resp.content)
+        return res

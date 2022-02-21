@@ -7,5 +7,6 @@ lib/
 lib64
 doc/_build/
 .idea/
+.env
 
 /src/geoserver_restconfig.egg-info/

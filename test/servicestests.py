@@ -155,7 +155,8 @@ class ServicesTests(unittest.TestCase):
         # test enums
         attrs = [k for k in self.wms_enums.keys()]
         for attr in attrs:
-            test_str = self.wms_enums[attr][random.randint(0, len(self.wms_enums[attr]))]
+            attr_values = self.wms_enums[attr]
+            test_str = attr_values[random.randint(0, len(attr_values) - 1)]
             setattr(wms_srv, attr, test_str)
             self.cat.save(wms_srv)
             wms_srv.refresh()
@@ -163,7 +164,7 @@ class ServicesTests(unittest.TestCase):
             self.assertEqual(getattr(wms_srv, attr), test_str, msg=f"Invalid value for object {attr}")
 
         # test int
-        attrs = [k for k in wms_srv.writers.keys() if isinstance(getattr(wms_srv, k), int)]
+        attrs = [k for k in wms_srv.writers.keys() if isinstance(getattr(wms_srv, k), int) and not isinstance(getattr(wms_srv, k), bool)]
         for attr in attrs:
             test_int = random.randint(1, 20)
             setattr(wms_srv, attr, test_int)
@@ -213,7 +214,7 @@ class ServicesTests(unittest.TestCase):
             self.assertEqual(getattr(wfs_srv, attr), test_str, msg=f"Invalid value for object {attr}")
 
         # test int
-        attrs = [k for k in wfs_srv.writers.keys() if isinstance(getattr(wfs_srv, k), int)]
+        attrs = [k for k in wfs_srv.writers.keys() if isinstance(getattr(wfs_srv, k), int) and not isinstance(getattr(wfs_srv, k), bool)]
         for attr in attrs:
             test_int = random.randint(1, 20)
             setattr(wfs_srv, attr, test_int)
@@ -263,7 +264,7 @@ class ServicesTests(unittest.TestCase):
             self.assertEqual(getattr(wcs_srv, attr), test_str, msg=f"Invalid value for object {attr}")
 
         # test int
-        attrs = [k for k in wcs_srv.writers.keys() if isinstance(getattr(wcs_srv, k), int)]
+        attrs = [k for k in wcs_srv.writers.keys() if isinstance(getattr(wcs_srv, k), int) and not isinstance(getattr(wcs_srv, k), bool)]
         for attr in attrs:
             test_int = random.randint(1, 20)
             setattr(wcs_srv, attr, test_int)
@@ -313,7 +314,7 @@ class ServicesTests(unittest.TestCase):
             self.assertEqual(getattr(wmts_srv, attr), test_str, msg=f"Invalid value for object {attr}")
 
         # test int
-        attrs = [k for k in wmts_srv.writers.keys() if isinstance(getattr(wmts_srv, k), int)]
+        attrs = [k for k in wmts_srv.writers.keys() if isinstance(getattr(wmts_srv, k), int) and not isinstance(getattr(wmts_srv, k), bool)]
         for attr in attrs:
             test_int = random.randint(1, 20)
             setattr(wmts_srv, attr, test_int)

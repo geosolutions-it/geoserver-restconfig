@@ -177,6 +177,10 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual("topp", self.cat.get_workspace("topp").name)
         self.assertIsNone(self.cat.get_workspace("blahblah-"))
 
+    def testUsers(self):
+        users = self.cat.get_users()
+        x = 1
+
     def testStores(self):
         self.assertEqual(0, len(self.cat.get_stores(names="nonexistentstore")))
         topp = self.cat.get_workspaces("topp")[0]
