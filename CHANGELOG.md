@@ -1,6 +1,14 @@
 
 # Change Log
 
+## 2.0.5 [2022-02-21]
+
+<li> Mon Feb 21 20:29:46 2022 +0100: Andrzej (Andy) <a href=https://github.com/GeoNode/geoserver-restconfig/commit/18fdf31950bd78f814b91ea539389ea6086e1616 target=blank>Added roles management for user (#27)</a></li>
+<li> Mon Feb 21 19:46:37 2022 +0100: Andrzej (Andy) <a href=https://github.com/GeoNode/geoserver-restconfig/commit/301be5da502eb7a5db433a1a5831ab12ee2ae9ff target=blank>Added settings management (#25)</a></li>
+<li> Mon Feb 21 18:34:41 2022 +0100: Andrzej (Andy) <a href=https://github.com/GeoNode/geoserver-restconfig/commit/ff8b6453ae2289e35ddee2b3a11b6bac33f06c08 target=blank>Added users listing and setting user and master passwords (#24)</a></li>
+<li> Mon Feb 21 16:14:38 2022 +0000: Alessio Fabiani <a href=https://github.com/GeoNode/geoserver-restconfig/commit/c2b733c50739dc08e5db2257fbf44cf6cdeb4fc1 target=blank>Refactor: Feature/add service settings from @jendrusk (#31)</a></li>
+<li> Mon Feb 21 15:53:32 2022 +0100: Giovanni Allegri <a href=https://github.com/GeoNode/geoserver-restconfig/commit/857c48accb412413e96c172830422570c947429c target=blank>retrieve layer default style with original formtat (#30)</a></li>
+
 ## 2.0.4.10 [2021-11-10]
 
 <li> 2021-11-10: Giovanni Allegri [Fixes #21] force body style format with headers #22</li>
