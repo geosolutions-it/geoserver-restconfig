@@ -112,7 +112,8 @@ class Jai(StaticResourceInfo):
         "pngAcceleration": write_bool("pngAcceleration"),
         "jpegAcceleration": write_bool("jpegAcceleration"),
         "allowNativeMosaic": write_bool("allowNativeMosaic"),
-        "allowNativeWarp": write_bool("allowNativeWarp")}
+        "allowNativeWarp": write_bool("allowNativeWarp")
+    }
 
 
 class CoverageAccess(StaticResourceInfo):

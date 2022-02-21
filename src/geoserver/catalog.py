@@ -227,7 +227,6 @@ class Catalog(object):
             "Content-type": "application/xml",
             "Accept": "application/xml"
         }
-
         resp = self.http_request(rest_url, method='delete', headers=headers)
         if resp.status_code != 200:
             raise FailedRequestError(f'Failed to make DELETE request: {resp.status_code}, {resp.text}')
@@ -1332,10 +1331,41 @@ class Catalog(object):
                 data = self.get_xml(f"{self.service_url}/services/{ogc_type}/workspaces/{ws.name}/settings")
                 services.append(service_from_index(self, data))
             except FailedRequestError as e:
-                logger.debug(f"Not found {ogc_type} service for workspace {ws.name}"
-                             )
-
+                logger.debug(f"Not found {ogc_type} service for workspace {ws.name}")
         return services
+
+    def create_user(self, username, password):
+
+        users = self.get_users(names=username)
+        if len(users) > 0:
+            logging.warning(f"User {username} already exists")
+            tmp_cat = Catalog(service_url=self.service_url, username=username, password=password)
+            try:
+                tmp_cat.get_version()
+            except FailedRequestError as e:
+                logger.error("And we probably have incorrect password")
+                raise FailedRequestError
+
+            return users[0]
+
+        xml = (
+            "<user>"
+            "<userName>{username}</userName>"
+            "<password>{password}</password>"
+            "<enabled>true</enabled>"
+            "</user>"
+        ).format(username=username, password=password)
+
+        headers = {"Content-Type": "application/xml"}
+        users_url = f"{self.service_url}/security/usergroup/users/"
+
+        resp = self.http_request(users_url, method='post', data=xml, headers=headers)
+        if resp.status_code not in (200, 201, 202):
+            raise FailedRequestError(f'Failed to create user {username} : {resp.status_code}, {resp.text}')
+
+        self._cache.pop(f"{self.service_url}/security/usergroup/users/", None)
+        users = self.get_users(names=username)
+        return users[0] if users else None
 
     def get_users(self, names=None):
         '''
@@ -1354,8 +1384,7 @@ class Catalog(object):
         users.extend([user_from_index(self, node) for node in data.findall("user")])
 
         if users and names:
-            return ([ws for ws in users if ws.name in names])
-
+            return ([ws for ws in users if ws.user_name in names])
         return users
 
     def get_master_pwd(self):
@@ -1411,3 +1440,33 @@ class Catalog(object):
 
     def get_global_settings(self):
         return GlobalSettings(self)
+
+    def get_roles(self):
+        url = f"{self.service_url}/security/roles"
+        resp = self.get_xml(rest_url=url)
+        roles = [x.text for x in resp.findall("role")]
+        return roles
+
+    def get_roles_user(self, username):
+        url = f"{self.service_url}/security/roles/user/{username}"
+        resp = self.get_xml(rest_url=url)
+        roles = [x.text for x in resp.findall("role")]
+        return roles
+
+    def add_role_user(self, rolename, username):
+        url = f"{self.service_url}/security/roles/role/{rolename}/user/{username}"
+        resp = self.http_request(url, method="post")
+
+        if resp.status_code != 200:
+            raise FailedRequestError(resp.content)
+
+        self._cache.clear()
+
+    def del_role_user(self, rolename, username):
+        url = f"{self.service_url}/security/roles/role/{rolename}/user/{username}"
+        resp = self.http_request(url, method="delete")
+
+        if resp.status_code != 200:
+            raise FailedRequestError(resp.content)
+
+        self._cache.clear()

@@ -274,15 +274,19 @@ class StaticResourceInfo(object):
             self.dirty['advertised'] = self.advertised
 
         for k, writer in self.writers.items():
-
-            attr = getattr(self, k)
-
-            if issubclass(type(attr), StaticResourceInfo) and attr.dirty:
-                attr.serialize_all(builder)
-            else:
-                if k in self.dirty or self.write_all:
-                    val = self.dirty[k] if self.dirty.get(k) else attr
-                    writer(builder, val)
+            if hasattr(self, k) and issubclass(type(getattr(self, k)), StaticResourceInfo):
+                attr = getattr(self, k)
+                if attr.dirty:
+                    attr.serialize_all(builder)
+            elif k in self.dirty:
+                val = self.dirty[k]
+                writer(builder, val)
+            elif self.write_all:
+                attr = None
+            elif self.write_all and hasattr(self, k):
+                attr = getattr(self, k)
+                val = self.dirty[k] if self.dirty.get(k) else attr
+                writer(builder, val)
 
     def serialize_all(self, builder):
         builder.start(self.resource_type, dict())
