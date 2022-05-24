@@ -153,15 +153,17 @@ class Layer(ResourceInfo):
         return self._resolve_style(element, recursive) if element is not None else None
 
     def _resolve_style(self, element, recursive=False):
-        if ":" in element.find('name').text:
-            ws_name, style_name = element.find('name').text.split(':')
-        else:
-            style_name = element.find('name').text
-            ws_name = None
-        atom_link = [n for n in element if 'href' in n.attrib]
-        if atom_link and ws_name is None:
-            ws_name = workspace_from_url(atom_link[0].get("href"))
-        return self.catalog.get_styles(names=style_name, workspaces=ws_name, recursive=recursive)[0]
+        if element and element.find('name') and element.find('name').text:
+            if ":" in element.find('name').text:
+                ws_name, style_name = element.find('name').text.split(':')
+            else:
+                style_name = element.find('name').text
+                ws_name = None
+            atom_link = [n for n in element if 'href' in n.attrib]
+            if atom_link and ws_name is None:
+                ws_name = workspace_from_url(atom_link[0].get("href"))
+            return self.catalog.get_styles(names=style_name, workspaces=ws_name, recursive=recursive)[0]
+        return None
 
     def _set_default_style(self, style):
         if isinstance(style, Style):
