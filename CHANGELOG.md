@@ -1,6 +1,11 @@
 
 # Change Log
 
+## 2.0.6 [2022-05-24]
+
+<li> Tue May 24 16:52:30 2022 +0200: afabiani <a href=https://github.com/GeoNode/geoserver-restconfig/commit/a023ff5f0c808aece1aeebfe2af474f1eab7c84e target=blank>Fixes: Errors on creating WMS Cascade stores and layers (references https://github.com/GeoNode/geonode/issues/9426)</a></li>
+<li> Tue May 24 16:24:05 2022 +0200: krych14m <a href=https://github.com/GeoNode/geoserver-restconfig/commit/d00cb5308c04865fa068c4243c18a2dfffc8fb99 target=blank>do not print request body on Catalog.save() (#33)</a></li>
+
 ## 2.0.5 [2022-02-21]
 
 <li> Mon Feb 21 20:29:46 2022 +0100: Andrzej (Andy) <a href=https://github.com/GeoNode/geoserver-restconfig/commit/18fdf31950bd78f814b91ea539389ea6086e1616 target=blank>Added roles management for user (#27)</a></li>
