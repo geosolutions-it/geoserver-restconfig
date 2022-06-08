@@ -153,7 +153,7 @@ class Layer(ResourceInfo):
         return self._resolve_style(element, recursive) if element is not None else None
 
     def _resolve_style(self, element, recursive=False):
-        if element and element.find('name') and element.find('name').text:
+        if element and element.find('name') is not None and len(element.find('name').text):
             if ":" in element.find('name').text:
                 ws_name, style_name = element.find('name').text.split(':')
             else:
