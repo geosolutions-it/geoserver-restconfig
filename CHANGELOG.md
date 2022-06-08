@@ -1,6 +1,10 @@
 
 # Change Log
 
+## 2.0.7 [2022-06-08]
+
+<li> Wed Jun 8 13:30:14 2022 +0200: afabiani <a href=https://github.com/GeoNode/geoserver-restconfig/commit/7d866111ed31b68dc2fc8086857a568c9074d54b target=blank> - Fix a regression preventing the library to fetch the style name</a></li>
+
 ## 2.0.6 [2022-05-24]
 
 <li> Tue May 24 16:52:30 2022 +0200: afabiani <a href=https://github.com/GeoNode/geoserver-restconfig/commit/a023ff5f0c808aece1aeebfe2af474f1eab7c84e target=blank>Fixes: Errors on creating WMS Cascade stores and layers (references https://github.com/GeoNode/geonode/issues/9426)</a></li>
