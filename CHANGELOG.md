@@ -1,6 +1,11 @@
 
 # Change Log
 
+## 2.0.8 [2022-08-01]
+
+<li> Thu Jul 21 17:29:17 2022 +0100: Daniele Romagnoli <a href=https://github.com/GeoNode/geoserver-restconfig/commit/5204b20e491416eaf43fbd9ab81b41773ccbfed1 target=blank>Adding some more code examples (#36)</a></li>
+<li> Mon Jul 4 11:09:59 2022 +0200: Daniele Romagnoli <a href=https://github.com/GeoNode/geoserver-restconfig/commit/a449012f420d0d6dbab4a4001120ecd44ed2d0b0 target=blank>#34: Better support for layergroups (#35)</a></li>
+
 ## 2.0.7 [2022-06-08]
 
 <li> Wed Jun 8 13:30:14 2022 +0200: afabiani <a href=https://github.com/GeoNode/geoserver-restconfig/commit/7d866111ed31b68dc2fc8086857a568c9074d54b target=blank> - Fix a regression preventing the library to fetch the style name</a></li>
