@@ -1,6 +1,10 @@
 
 # Change Log
 
+## 2.0.9 [2023-05-15]
+
+ - Compatibility with urllib3>2
+
 ## 2.0.8 [2022-08-01]
 
 <li> Thu Jul 21 17:29:17 2022 +0100: Daniele Romagnoli <a href=https://github.com/GeoNode/geoserver-restconfig/commit/5204b20e491416eaf43fbd9ab81b41773ccbfed1 target=blank>Adding some more code examples (#36)</a></li>

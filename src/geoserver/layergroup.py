@@ -10,12 +10,20 @@
 #########################################################################
 
 from six import string_types
+
 try:
     from urllib.parse import urljoin
 except BaseException:
     from urlparse import urljoin
 
-from geoserver.support import ResourceInfo, bbox, write_bbox, write_string, xml_property, build_url
+from geoserver.support import (
+    ResourceInfo,
+    bbox,
+    write_bbox,
+    write_string,
+    xml_property,
+    build_url,
+)
 
 try:
     from past.builtins import basestring
@@ -40,15 +48,15 @@ def _style_list(node):
         return [_maybe_text(n.find("name")) for n in node.findall("style")]
 
 
-def _write_layers(builder, layers, parent, element, attributes = None):
+def _write_layers(builder, layers, parent, element, attributes=None):
     builder.start(parent, dict())
     for l in layers:
         _name = None
         _attributes = attributes or dict()
         if l is not None:
-            if isinstance (l, dict):
-                _name = l.get('name', None)
-                _attributes = l.get('attributes', _attributes)
+            if isinstance(l, dict):
+                _name = l.get("name", None)
+                _attributes = l.get("attributes", _attributes)
             else:
                 _name = l
         if _name:
@@ -97,32 +105,28 @@ class LayerGroup(ResourceInfo):
         else:
             parent = "publishables"
             element = "published"
-            attributes = {'type': 'layer'}
+            attributes = {"type": "layer"}
         self._layer_parent = parent
         self._layer_element = element
         self._layer_attributes = attributes
         self.writers = {
-            'name': write_string("name"),
-            'styles': _write_styles,
-            'layers': lambda b, l: _write_layers(b, l, parent,
-                                                 element, attributes),
-            'bounds': write_bbox("bounds"),
-            'workspace': write_string("workspace"),
-            'mode': write_string("mode"),
-            'abstractTxt': write_string("abstractTxt"),
-            'title': write_string("title")
+            "name": write_string("name"),
+            "styles": _write_styles,
+            "layers": lambda b, l: _write_layers(b, l, parent, element, attributes),
+            "bounds": write_bbox("bounds"),
+            "workspace": write_string("workspace"),
+            "mode": write_string("mode"),
+            "abstractTxt": write_string("abstractTxt"),
+            "title": write_string("title"),
         }
 
     @property
     def href(self):
         path_parts = f"layergroups/{self.name}.xml"
         if self.workspace is not None and self.workspace:
-            workspace_name = getattr(self.workspace, 'name', self.workspace)
+            workspace_name = getattr(self.workspace, "name", self.workspace)
             path_parts = f"workspaces/{workspace_name}/{path_parts}"
-        return urljoin(
-            f"{self.catalog.service_url}/",
-            path_parts
-        )
+        return urljoin(f"{self.catalog.service_url}/", path_parts)
 
     styles = xml_property("styles", _style_list)
     bounds = xml_property("bounds", bbox)
@@ -158,25 +162,36 @@ class LayerGroup(ResourceInfo):
 class UnsavedLayerGroup(LayerGroup):
     save_method = "POST"
 
-    def __init__(self, catalog, name, layers, styles, bounds, mode, abstract, title, workspace = None):
+    def __init__(
+        self,
+        catalog,
+        name,
+        layers,
+        styles,
+        bounds,
+        mode,
+        abstract,
+        title,
+        workspace=None,
+    ):
         super(UnsavedLayerGroup, self).__init__(catalog, name, workspace=workspace)
         self.dirty.update(
-            name = name,
-            layers = layers,
-            styles = styles,
-            workspace = workspace,
-            mode = mode.upper(),
-            abstractTxt = abstract,
-            title = title
+            name=name,
+            layers=layers,
+            styles=styles,
+            workspace=workspace,
+            mode=mode.upper(),
+            abstractTxt=abstract,
+            title=title,
         )
         if bounds is not None:
-            self.dirty.update(bounds = bounds)
+            self.dirty.update(bounds=bounds)
 
     @property
     def href(self):
-        query = {'name': self.name}
-        path_parts = ['layergroups']
+        query = {"name": self.name}
+        path_parts = ["layergroups"]
         if self.workspace is not None and self.workspace:
-            workspace_name = getattr(self.workspace, 'name', self.workspace)
+            workspace_name = getattr(self.workspace, "name", self.workspace)
             path_parts = ["workspaces", workspace_name] + path_parts
         return build_url(self.catalog.service_url, path_parts, query)

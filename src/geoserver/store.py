@@ -11,8 +11,20 @@
 
 from six import string_types
 import geoserver.workspace as ws
-from geoserver.resource import featuretype_from_index, coverage_from_index, wmslayer_from_index
-from geoserver.support import ResourceInfo, xml_property, key_value_pairs, write_bool, write_dict, write_string, build_url
+from geoserver.resource import (
+    featuretype_from_index,
+    coverage_from_index,
+    wmslayer_from_index,
+)
+from geoserver.support import (
+    ResourceInfo,
+    xml_property,
+    key_value_pairs,
+    write_bool,
+    write_dict,
+    write_string,
+    build_url,
+)
 
 try:
     from past.builtins import basestring
@@ -38,7 +50,6 @@ def wmsstore_from_index(catalog, workspace, node):
 
 
 class DataStore(ResourceInfo):
-
     resource_type = "dataStore"
     save_method = "PUT"
 
@@ -55,12 +66,7 @@ class DataStore(ResourceInfo):
     def href(self):
         url = build_url(
             self.catalog.service_url,
-            [
-                "workspaces",
-                self.workspace.name,
-                "datastores",
-                f"{self.name}.xml"
-            ]
+            ["workspaces", self.workspace.name, "datastores", f"{self.name}.xml"],
         )
         return url
 
@@ -70,10 +76,10 @@ class DataStore(ResourceInfo):
     connection_parameters = xml_property("connectionParameters", key_value_pairs)
 
     writers = dict(
-        enabled = write_bool("enabled"),
-        name = write_string("name"),
-        type = write_string("type"),
-        connectionParameters = write_dict("connectionParameters")
+        enabled=write_bool("enabled"),
+        name=write_string("name"),
+        type=write_string("type"),
+        connectionParameters=write_dict("connectionParameters"),
     )
 
     @property
@@ -85,8 +91,8 @@ class DataStore(ResourceInfo):
                 self.workspace.name,
                 "datastores",
                 self.name,
-                "featuretypes.xml"
-            ]
+                "featuretypes.xml",
+            ],
         )
         return url
 
@@ -112,28 +118,23 @@ class DataStore(ResourceInfo):
 
 
 class UnsavedDataStore(DataStore):
-
     save_method = "POST"
 
     def __init__(self, catalog, name, workspace):
         super(UnsavedDataStore, self).__init__(catalog, workspace, name)
-        self.dirty.update(dict(
-            name=name, enabled=True, type=None,
-            connectionParameters=dict()))
+        self.dirty.update(
+            dict(name=name, enabled=True, type=None, connectionParameters=dict())
+        )
 
     @property
     def href(self):
-        path = [
-            "workspaces",
-            self.workspace.name,
-            "datastores"
-        ]
+        path = ["workspaces", self.workspace.name, "datastores"]
         query = dict(name=self.name)
         return build_url(self.catalog.service_url, path, query)
 
 
 class CoverageStore(ResourceInfo):
-    resource_type = 'coverageStore'
+    resource_type = "coverageStore"
     save_method = "PUT"
 
     def __init__(self, catalog, workspace, name):
@@ -147,12 +148,7 @@ class CoverageStore(ResourceInfo):
     def href(self):
         url = build_url(
             self.catalog.service_url,
-            [
-                "workspaces",
-                self.workspace.name,
-                "coveragestores",
-                f"{self.name}.xml"
-            ]
+            ["workspaces", self.workspace.name, "coveragestores", f"{self.name}.xml"],
         )
         return url
 
@@ -162,11 +158,11 @@ class CoverageStore(ResourceInfo):
     type = xml_property("type")
 
     writers = dict(
-        enabled = write_bool("enabled"),
-        name = write_string("name"),
-        url = write_string("url"),
-        type = write_string("type"),
-        workspace = write_string("workspace")
+        enabled=write_bool("enabled"),
+        name=write_string("name"),
+        url=write_string("url"),
+        type=write_string("type"),
+        workspace=write_string("workspace"),
     )
 
     def get_resources(self, name=None):
@@ -177,8 +173,8 @@ class CoverageStore(ResourceInfo):
                 self.workspace.name,
                 "coveragestores",
                 self.name,
-                "coverages.xml"
-            ]
+                "coverages.xml",
+            ],
         )
 
         xml = self.catalog.get_xml(res_url)
@@ -201,23 +197,19 @@ class UnsavedCoverageStore(CoverageStore):
     def __init__(self, catalog, name, workspace):
         super(UnsavedCoverageStore, self).__init__(catalog, workspace, name)
         self.dirty.update(
-            name = name,
-            enabled = True,
-            type = 'GeoTIFF',
-            url = "file:data/",
-            workspace = workspace
+            name=name,
+            enabled=True,
+            type="GeoTIFF",
+            url="file:data/",
+            workspace=workspace,
         )
 
     @property
     def href(self):
         url = build_url(
             self.catalog.service_url,
-            [
-                "workspaces",
-                self.workspace,
-                "coveragestores"
-            ],
-            dict(name=self.name)
+            ["workspaces", self.workspace, "coveragestores"],
+            dict(name=self.name),
         )
         return url
 
@@ -232,8 +224,8 @@ class WmsStore(ResourceInfo):
         self.workspace = workspace
         self.name = name
         self.metadata = {}
-        self.metadata['user'] = user
-        self.metadata['password'] = password
+        self.metadata["user"] = user
+        self.metadata["password"] = password
 
     @property
     def href(self):
@@ -246,11 +238,13 @@ class WmsStore(ResourceInfo):
     type = xml_property("type")
     metadata = xml_property("metadata", key_value_pairs)
 
-    writers = dict(enabled = write_bool("enabled"),
-                   name = write_string("name"),
-                   capabilitiesURL = write_string("capabilitiesURL"),
-                   type = write_string("type"),
-                   metadata = write_dict("metadata"))
+    writers = dict(
+        enabled=write_bool("enabled"),
+        name=write_string("name"),
+        capabilitiesURL=write_string("capabilitiesURL"),
+        type=write_string("type"),
+        metadata=write_dict("metadata"),
+    )
 
     def get_resources(self, name=None, available=False):
         res_url = f"{self.catalog.service_url}/workspaces/{self.workspace.name}/wmsstores/{self.name}/wmslayers.xml"
@@ -258,7 +252,7 @@ class WmsStore(ResourceInfo):
 
         if available:
             res_url += "?list=available"
-            layer_name_attr += 'Name'
+            layer_name_attr += "Name"
 
         xml = self.catalog.get_xml(res_url)
 
@@ -285,10 +279,17 @@ class UnsavedWmsStore(WmsStore):
         super(UnsavedWmsStore, self).__init__(catalog, workspace, name, user, password)
         metadata = {}
         if user is not None and password is not None:
-            metadata['user'] = user
-            metadata['password'] = password
-        self.dirty.update(dict(
-            name=name, enabled=True, capabilitiesURL="", type="WMS", metadata=metadata))
+            metadata["user"] = user
+            metadata["password"] = password
+        self.dirty.update(
+            dict(
+                name=name,
+                enabled=True,
+                capabilitiesURL="",
+                type="WMS",
+                metadata=metadata,
+            )
+        )
 
     @property
     def href(self):

@@ -41,14 +41,11 @@ class User(ResourceInfo):
     @property
     def href(self):
         return urljoin(
-            f"{self.catalog.service_url}/",
-            f"security/usergroup/users/{self.user_name}"
+            f"{self.catalog.service_url}/", f"security/usergroup/users/{self.user_name}"
         )
 
-    enabled = xml_property("enabled", lambda x: x.lower() == 'true')
-    writers = {
-        'enabled': write_bool("enabled")
-    }
+    enabled = xml_property("enabled", lambda x: x.lower() == "true")
+    writers = {"enabled": write_bool("enabled")}
 
     def __repr__(self):
         return f"{self.user_name} @ {self.href}"

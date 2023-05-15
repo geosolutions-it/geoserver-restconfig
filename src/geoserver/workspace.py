@@ -39,36 +39,28 @@ class Workspace(ResourceInfo):
 
     @property
     def href(self):
-        return urljoin(
-            f"{self.catalog.service_url}/",
-            f"workspaces/{self.name}.xml"
-        )
+        return urljoin(f"{self.catalog.service_url}/", f"workspaces/{self.name}.xml")
 
     @property
     def coveragestore_url(self):
         return urljoin(
-            f"{self.catalog.service_url}/",
-            f"workspaces/{self.name}/coveragestores.xml"
+            f"{self.catalog.service_url}/", f"workspaces/{self.name}/coveragestores.xml"
         )
 
     @property
     def datastore_url(self):
         return urljoin(
-            f"{self.catalog.service_url}/",
-            f"workspaces/{self.name}/datastores.xml"
+            f"{self.catalog.service_url}/", f"workspaces/{self.name}/datastores.xml"
         )
 
     @property
     def wmsstore_url(self):
         return urljoin(
-            f"{self.catalog.service_url}/",
-            f"workspaces/{self.name}/wmsstores.xml"
+            f"{self.catalog.service_url}/", f"workspaces/{self.name}/wmsstores.xml"
         )
 
-    enabled = xml_property("enabled", lambda x: x.lower() == 'true')
-    writers = {
-        'enabled': write_bool("enabled")
-    }
+    enabled = xml_property("enabled", lambda x: x.lower() == "true")
+    writers = {"enabled": write_bool("enabled")}
 
     def __repr__(self):
         return f"{self.name} @ {self.href}"

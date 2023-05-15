@@ -18,7 +18,8 @@ from geoserver.support import (
     xml_property,
     write_bool,
     workspace_from_url,
-    resource_from_url)
+    resource_from_url,
+)
 from geoserver.style import Style
 
 
@@ -86,7 +87,7 @@ def _write_attribution(builder, attr):
 
 
 def _write_style_element(builder, name):
-    ws, name = name.split(':') if ':' in name else (None, name)
+    ws, name = name.split(":") if ":" in name else (None, name)
     builder.start("name", dict())
     builder.data(name)
     builder.end("name")
@@ -107,7 +108,7 @@ def _write_alternate_styles(builder, styles):
     builder.start("styles", dict())
     for s in styles:
         builder.start("style", dict())
-        _write_style_element(builder, getattr(s, 'fqn', s))
+        _write_style_element(builder, getattr(s, "fqn", s))
         builder.end("style")
     builder.end("styles")
 
@@ -124,28 +125,27 @@ class Layer(ResourceInfo):
 
     @property
     def href(self):
-        return urljoin(
-            f"{self.catalog.service_url}/",
-            f"layers/{self.name}.xml"
-        )
+        return urljoin(f"{self.catalog.service_url}/", f"layers/{self.name}.xml")
 
     @property
     def resource(self):
         if self.dom is None:
             self.fetch()
         name = self.dom.find("resource/name").text
-        atom_link = [n for n in self.dom.find("resource") if 'href' in n.attrib]
-        ws_name = workspace_from_url(atom_link[0].get('href'))
+        atom_link = [n for n in self.dom.find("resource") if "href" in n.attrib]
+        ws_name = workspace_from_url(atom_link[0].get("href"))
         if self.gs_version >= "2.13":
             if ":" in name:
-                ws_name, name = name.split(':', 1)
-        store_name = resource_from_url(atom_link[0].get('href'), ws_name)
-        _resources = self.catalog.get_resources(names=[name], stores=[store_name], workspaces=[ws_name])
+                ws_name, name = name.split(":", 1)
+        store_name = resource_from_url(atom_link[0].get("href"), ws_name)
+        _resources = self.catalog.get_resources(
+            names=[name], stores=[store_name], workspaces=[ws_name]
+        )
         return _resources[0] if len(_resources) > 0 else _resources
 
     def _get_default_style(self, recursive=False):
-        if 'default_style' in self.dirty:
-            return self.dirty['default_style']
+        if "default_style" in self.dirty:
+            return self.dirty["default_style"]
         if self.dom is None:
             self.fetch()
         element = self.dom.find("defaultStyle")
@@ -153,16 +153,22 @@ class Layer(ResourceInfo):
         return self._resolve_style(element, recursive) if element is not None else None
 
     def _resolve_style(self, element, recursive=False):
-        if element and element.find('name') is not None and len(element.find('name').text):
-            if ":" in element.find('name').text:
-                ws_name, style_name = element.find('name').text.split(':')
+        if (
+            element
+            and element.find("name") is not None
+            and len(element.find("name").text)
+        ):
+            if ":" in element.find("name").text:
+                ws_name, style_name = element.find("name").text.split(":")
             else:
-                style_name = element.find('name').text
+                style_name = element.find("name").text
                 ws_name = None
-            atom_link = [n for n in element if 'href' in n.attrib]
+            atom_link = [n for n in element if "href" in n.attrib]
             if atom_link and ws_name is None:
                 ws_name = workspace_from_url(atom_link[0].get("href"))
-            return self.catalog.get_styles(names=style_name, workspaces=ws_name, recursive=recursive)[0]
+            return self.catalog.get_styles(
+                names=style_name, workspaces=ws_name, recursive=recursive
+            )[0]
         return None
 
     def _set_default_style(self, style):
@@ -199,38 +205,38 @@ class Layer(ResourceInfo):
 
     def _get_attr_attribution(self):
         obj = {
-            'title': self.attribution_object.title,
-            'width': self.attribution_object.width,
-            'height': self.attribution_object.height,
-            'href': self.attribution_object.href,
-            'url': self.attribution_object.url,
-            'type': self.attribution_object.type
+            "title": self.attribution_object.title,
+            "width": self.attribution_object.width,
+            "height": self.attribution_object.height,
+            "href": self.attribution_object.href,
+            "url": self.attribution_object.url,
+            "type": self.attribution_object.type,
         }
         return obj
 
     def _set_attr_attribution(self, attribution):
         self.dirty["attribution"] = _attribution(
-            attribution['title'],
-            attribution['width'],
-            attribution['height'],
-            attribution['href'],
-            attribution['url'],
-            attribution['type']
+            attribution["title"],
+            attribution["width"],
+            attribution["height"],
+            attribution["href"],
+            attribution["url"],
+            attribution["type"],
         )
 
-        assert self.attribution_object.title == attribution['title']
-        assert self.attribution_object.width == attribution['width']
-        assert self.attribution_object.height == attribution['height']
-        assert self.attribution_object.href == attribution['href']
-        assert self.attribution_object.url == attribution['url']
-        assert self.attribution_object.type == attribution['type']
+        assert self.attribution_object.title == attribution["title"]
+        assert self.attribution_object.width == attribution["width"]
+        assert self.attribution_object.height == attribution["height"]
+        assert self.attribution_object.href == attribution["href"]
+        assert self.attribution_object.url == attribution["url"]
+        assert self.attribution_object.type == attribution["type"]
 
     attribution = property(_get_attr_attribution, _set_attr_attribution)
 
     writers = {
-        'attribution': _write_attribution,
-        'enabled': write_bool("enabled"),
-        'advertised': write_bool("advertised"),
-        'default_style': _write_default_style,
-        'alternate_styles': _write_alternate_styles
+        "attribution": _write_attribution,
+        "enabled": write_bool("enabled"),
+        "advertised": write_bool("advertised"),
+        "default_style": _write_default_style,
+        "alternate_styles": _write_alternate_styles,
     }

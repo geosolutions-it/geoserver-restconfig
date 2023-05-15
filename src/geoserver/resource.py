@@ -10,13 +10,26 @@
 #########################################################################
 
 from six import string_types
+
 try:
     from urllib.parse import urljoin
 except BaseException:
     from urlparse import urljoin
 
-from geoserver.support import (ResourceInfo, xml_property, write_string, bbox, metadata, write_metadata,
-                               write_bbox, string_list, write_string_list, attribute_list, write_bool, build_url)
+from geoserver.support import (
+    ResourceInfo,
+    xml_property,
+    write_string,
+    bbox,
+    metadata,
+    write_metadata,
+    write_bbox,
+    string_list,
+    write_string_list,
+    attribute_list,
+    write_bool,
+    build_url,
+)
 
 try:
     from past.builtins import basestring
@@ -44,11 +57,11 @@ def write_metadata_link_list(name):
     def write(builder, md_links):
         builder.start(name, dict())
         if md_links:
-            for (mime, md_type, content_url) in md_links:
+            for mime, md_type, content_url in md_links:
                 # geoserver supports only three mime
-                if md_type not in ['ISO19115:2003', 'FGDC', 'TC211']:
-                    mime = 'other'
-                    md_type = 'other'
+                if md_type not in ["ISO19115:2003", "FGDC", "TC211"]:
+                    mime = "other"
+                    md_type = "other"
                 builder.start("metadataLink", dict())
                 builder.start("type", dict())
                 builder.data(mime)
@@ -61,6 +74,7 @@ def write_metadata_link_list(name):
                 builder.end("content")
                 builder.end("metadataLink")
         builder.end(name)
+
     return write
 
 
@@ -80,7 +94,7 @@ def wmslayer_from_index(catalog, workspace, store, node):
 
 
 class _ResourceBase(ResourceInfo):
-    save_method = 'PUT'
+    save_method = "PUT"
 
     def __init__(self, catalog, workspace, store, name, href=None):
         super(_ResourceBase, self).__init__()
@@ -89,10 +103,10 @@ class _ResourceBase(ResourceInfo):
             assert isinstance(name, string_types)
             assert workspace is not None
         else:
-            parts = href.split('/')
-            self._workspace_name = parts[parts.index('workspaces') + 1]
+            parts = href.split("/")
+            self._workspace_name = parts[parts.index("workspaces") + 1]
             self._store_name = parts[parts.index(self.url_part_stores) + 1]
-            name = parts[-1].replace('.xml', '')
+            name = parts[-1].replace(".xml", "")
         self._href = href
         self.catalog = catalog
         self._workspace = workspace
@@ -108,7 +122,9 @@ class _ResourceBase(ResourceInfo):
     @property
     def store(self):
         if not self._store:
-            self._store = self.catalog.get_stores(names=self._store_name, workspaces=self._workspace_name)
+            self._store = self.catalog.get_stores(
+                names=self._store_name, workspaces=self._workspace_name
+            )
         return self._store
 
     @property
@@ -121,17 +137,16 @@ class _ResourceBase(ResourceInfo):
                 self.url_part_stores,
                 self.store.name,
                 self.url_part_types,
-                f"{self.name}.xml"
-            ]
+                f"{self.name}.xml",
+            ],
         )
         return url or self._href
 
 
 class FeatureType(_ResourceBase):
-
     resource_type = "featureType"
-    url_part_stores = 'datastores'
-    url_part_types = 'featuretypes'
+    url_part_stores = "datastores"
+    url_part_types = "featuretypes"
 
     title = xml_property("title")
     native_name = xml_property("nativeName")
@@ -148,20 +163,20 @@ class FeatureType(_ResourceBase):
     metadata = xml_property("metadata", metadata)
 
     writers = {
-        'name': write_string("name"),
-        'nativeName': write_string("nativeName"),
-        'title': write_string("title"),
-        'abstract': write_string("abstract"),
-        'enabled': write_bool("enabled"),
-        'advertised': write_bool("advertised"),
-        'nativeBoundingBox': write_bbox("nativeBoundingBox"),
-        'latLonBoundingBox': write_bbox("latLonBoundingBox"),
-        'srs': write_string("srs"),
-        'nativeCRS': write_string("nativeCRS"),
-        'projectionPolicy': write_string("projectionPolicy"),
-        'keywords': write_string_list("keywords"),
-        'metadataLinks': write_metadata_link_list("metadataLinks"),
-        'metadata': write_metadata("metadata")
+        "name": write_string("name"),
+        "nativeName": write_string("nativeName"),
+        "title": write_string("title"),
+        "abstract": write_string("abstract"),
+        "enabled": write_bool("enabled"),
+        "advertised": write_bool("advertised"),
+        "nativeBoundingBox": write_bbox("nativeBoundingBox"),
+        "latLonBoundingBox": write_bbox("latLonBoundingBox"),
+        "srs": write_string("srs"),
+        "nativeCRS": write_string("nativeCRS"),
+        "projectionPolicy": write_string("projectionPolicy"),
+        "keywords": write_string_list("keywords"),
+        "metadataLinks": write_metadata_link_list("metadataLinks"),
+        "metadata": write_metadata("metadata"),
     }
 
 
@@ -212,10 +227,9 @@ def coverage_dimension_xml(builder, dimension):
 
 
 class Coverage(_ResourceBase):
-
     resource_type = "coverage"
-    url_part_stores = 'coveragestores'
-    url_part_types = 'coverages'
+    url_part_stores = "coveragestores"
+    url_part_types = "coverages"
 
     title = xml_property("title")
     native_name = xml_property("nativeName")
@@ -239,26 +253,26 @@ class Coverage(_ResourceBase):
     interpolation_methods = xml_property("interpolationMethods", string_list)
 
     writers = {
-        'title': write_string("title"),
-        'native_name': write_string("nativeName"),
-        'native_format': write_string("nativeFormat"),
-        'native_crs': write_string("nativeCRS"),
-        'default_interpolation_method': write_string("defaultInterpolationMethod"),
-        'description': write_string("description"),
-        'abstract': write_string("abstract"),
-        'enabled': write_bool("enabled"),
-        'advertised': write_bool("advertised"),
-        'nativeBoundingBox': write_bbox("nativeBoundingBox"),
-        'latLonBoundingBox': write_bbox("latLonBoundingBox"),
-        'srs': write_string("srs"),
-        'projection_policy': write_string("projectionPolicy"),
-        'keywords': write_string_list("keywords"),
-        'metadataLinks': write_metadata_link_list("metadataLinks"),
-        'requestSRS': write_string_list("requestSRS"),
-        'responseSRS': write_string_list("responseSRS"),
-        'supportedFormats': write_string_list("supportedFormats"),
-        'interpolation_methods': write_string_list("interpolationMethods"),
-        'metadata': write_metadata("metadata")
+        "title": write_string("title"),
+        "native_name": write_string("nativeName"),
+        "native_format": write_string("nativeFormat"),
+        "native_crs": write_string("nativeCRS"),
+        "default_interpolation_method": write_string("defaultInterpolationMethod"),
+        "description": write_string("description"),
+        "abstract": write_string("abstract"),
+        "enabled": write_bool("enabled"),
+        "advertised": write_bool("advertised"),
+        "nativeBoundingBox": write_bbox("nativeBoundingBox"),
+        "latLonBoundingBox": write_bbox("latLonBoundingBox"),
+        "srs": write_string("srs"),
+        "projection_policy": write_string("projectionPolicy"),
+        "keywords": write_string_list("keywords"),
+        "metadataLinks": write_metadata_link_list("metadataLinks"),
+        "requestSRS": write_string_list("requestSRS"),
+        "responseSRS": write_string_list("responseSRS"),
+        "supportedFormats": write_string_list("supportedFormats"),
+        "interpolation_methods": write_string_list("interpolationMethods"),
+        "metadata": write_metadata("metadata"),
     }
 
 
@@ -278,7 +292,7 @@ class WmsLayer(ResourceInfo):
         # Removed Store from this due to error in the Rest API when including store
         return urljoin(
             f"{self.catalog.service_url}/",
-            f"workspaces/{self.workspace.name}/wmslayers/{self.name}.xml"
+            f"workspaces/{self.workspace.name}/wmslayers/{self.name}.xml",
         )
 
     title = xml_property("title")
@@ -291,21 +305,20 @@ class WmsLayer(ResourceInfo):
     latlon_bbox = xml_property("latLonBoundingBox", bbox)
     projection_policy = xml_property("projectionPolicy")
     enabled = xml_property("enabled", lambda x: x.text == "true")
-    advertised = xml_property("advertised", lambda x: x.text == "true",
-                              default=True)
+    advertised = xml_property("advertised", lambda x: x.text == "true", default=True)
     metadata_links = xml_property("metadataLinks", metadata_link_list)
 
     writers = {
-        'title': write_string("title"),
-        'description': write_string("description"),
-        'abstract': write_string("abstract"),
-        'keywords': write_string_list("keywords"),
+        "title": write_string("title"),
+        "description": write_string("description"),
+        "abstract": write_string("abstract"),
+        "keywords": write_string_list("keywords"),
         # nativeCRS
-        'srs': write_string("srs"),
-        'nativeBoundingBox': write_bbox("nativeBoundingBox"),
-        'latLonBoundingBox': write_bbox("latLonBoundingBox"),
-        'projectionPolicy': write_string("projectionPolicy"),
-        'enabled': write_bool("enabled"),
-        'advertised': write_bool("advertised"),
-        'metadataLinks': write_metadata_link_list("metadataLinks")
+        "srs": write_string("srs"),
+        "nativeBoundingBox": write_bbox("nativeBoundingBox"),
+        "latLonBoundingBox": write_bbox("latLonBoundingBox"),
+        "projectionPolicy": write_string("projectionPolicy"),
+        "enabled": write_bool("enabled"),
+        "advertised": write_bool("advertised"),
+        "metadataLinks": write_metadata_link_list("metadataLinks"),
     }

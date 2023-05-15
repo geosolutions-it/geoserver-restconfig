@@ -15,15 +15,24 @@ except BaseException:
     from urlparse import urljoin
 
 from geoserver.support import (
-    ResourceInfo, StaticResourceInfo,
+    ResourceInfo,
+    StaticResourceInfo,
     xml_property,
-    read_bool, read_float, read_int, read_string,
-    write_bool, write_float, write_int, write_string)
+    read_bool,
+    read_float,
+    read_int,
+    read_string,
+    write_bool,
+    write_float,
+    write_int,
+    write_string,
+)
 
 
 def write_subclass(sbc):
     def write(builder, sbc):
         sbc.serialize_all(builder)
+
     return write
 
 
@@ -49,7 +58,7 @@ class Contact(StaticResourceInfo):
         "contactEmail": write_string("contactEmail"),
         "contactOrganization": write_string("contactOrganization"),
         "contactPerson": write_string("contactPerson"),
-        "contactPosition": write_string("contactPosition")
+        "contactPosition": write_string("contactPosition"),
     }
 
 
@@ -67,7 +76,9 @@ class Settings(StaticResourceInfo):
     onlineResource = xml_property("onlineResource", read_string)
     verbose = xml_property("verbose", read_bool)
     verboseExceptions = xml_property("verboseExceptions", read_bool)
-    localWorkspaceIncludesPrefix = xml_property("localWorkspaceIncludesPrefix", read_bool)
+    localWorkspaceIncludesPrefix = xml_property(
+        "localWorkspaceIncludesPrefix", read_bool
+    )
 
     writers = {
         "id": write_string("id"),
@@ -82,7 +93,6 @@ class Settings(StaticResourceInfo):
 
 
 class Jai(StaticResourceInfo):
-
     def __init__(self, dom):
         super(Jai, self).__init__()
         self.dom = dom
@@ -112,12 +122,11 @@ class Jai(StaticResourceInfo):
         "pngAcceleration": write_bool("pngAcceleration"),
         "jpegAcceleration": write_bool("jpegAcceleration"),
         "allowNativeMosaic": write_bool("allowNativeMosaic"),
-        "allowNativeWarp": write_bool("allowNativeWarp")
+        "allowNativeWarp": write_bool("allowNativeWarp"),
     }
 
 
 class CoverageAccess(StaticResourceInfo):
-
     def __init__(self, dom):
         super(CoverageAccess, self).__init__()
         self.dom = dom
@@ -135,7 +144,7 @@ class CoverageAccess(StaticResourceInfo):
         "corePoolSize": write_int("corePoolSize"),
         "keepAliveTime": write_int("keepAliveTime"),
         "queueType": write_string("queueType"),
-        "imageIOCacheThreshold": write_int("imageIOCacheThreshold")
+        "imageIOCacheThreshold": write_int("imageIOCacheThreshold"),
     }
 
 
@@ -153,26 +162,25 @@ class GlobalSettings(ResourceInfo):
 
     @property
     def href(self):
-        return urljoin(
-            f"{self.catalog.service_url}/",
-            "settings"
-        )
+        return urljoin(f"{self.catalog.service_url}/", "settings")
 
     settings = xml_property("settings", Settings)
     jai = xml_property("jai", Jai)
     coverageAccess = xml_property("coverageAccess", CoverageAccess)
     updateSequence = xml_property("updateSequence", lambda x: int(x.text))
     featureTypeCacheSize = xml_property("featureTypeCacheSize", lambda x: int(x.text))
-    globalServices = xml_property("globalServices", lambda x: x.text.lower() == 'true')
-    xmlPostRequestLogBufferSize = xml_property("xmlPostRequestLogBufferSize", lambda x: int(x.text))
+    globalServices = xml_property("globalServices", lambda x: x.text.lower() == "true")
+    xmlPostRequestLogBufferSize = xml_property(
+        "xmlPostRequestLogBufferSize", lambda x: int(x.text)
+    )
 
     writers = {
-        'settings': write_subclass("settings"),
-        'jai': write_subclass("jai"),
-        'coverageAccess': write_subclass("coverageAccess"),
-        'featureTypeCacheSize': write_int("featureTypeCacheSize"),
-        'globalServices': write_bool("globalServices"),
-        'xmlPostRequestLogBufferSize': write_int("xmlPostRequestLogBufferSize")
+        "settings": write_subclass("settings"),
+        "jai": write_subclass("jai"),
+        "coverageAccess": write_subclass("coverageAccess"),
+        "featureTypeCacheSize": write_int("featureTypeCacheSize"),
+        "globalServices": write_bool("globalServices"),
+        "xmlPostRequestLogBufferSize": write_int("xmlPostRequestLogBufferSize"),
     }
 
     def __repr__(self):
