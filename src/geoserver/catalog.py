@@ -31,6 +31,7 @@ from geoserver.settings import GlobalSettings
 import os
 import re
 import base64
+from requests.exceptions import HTTPError
 from xml.etree.ElementTree import XML
 from xml.parsers.expat import ExpatError
 import requests
@@ -1213,15 +1214,63 @@ class Catalog(object):
 
     def get_style(self, name, workspace=None, recursive=False):
         """
-        returns a single style object.
+        Get single style from geoserver.
+        Keyword arguments:
+            name(str): name of the style
+        Optional keyword arguments:
+            workspace(str): name of the workspce where the style belong
+        Legacy:
+            recursive(bool): no longer used
+        Return
+            a single style object.
         Will return None if no style is found.
         Will raise an error if more than one style with the same name is found.
         """
 
-        styles = self.get_styles(
-            names=name, workspaces=[workspace], recursive=recursive
-        )
-        return self._return_first_item(styles)
+        url = f"{self.service_url}/workspaces/{workspace}/styles/{name}.json" if workspace \
+              else f"{self.service_url}/styles/{name}.json"
+
+        try:
+            resp = self.http_request(url, headers={"Accept": "application/json"})
+            resp.raise_for_status()
+            payload = resp.json()['style']
+            extracted_workspace = payload['workspace'].get("name", workspace) if payload.get("workspace") else workspace
+            return Style(
+                self,
+                payload['name'],
+                extracted_workspace,
+                payload['format'] + payload['languageVersion']['version'],
+            )
+
+        except HTTPError as e:
+            if resp.status_code == 404:
+                return None
+            logger.exception(e)
+            raise e
+        except Exception as e:
+            logger.exception(e)
+            raise e
+    
+    def delete_style(self, name, workspace=None, purge=True):
+        if workspace:
+            '''
+            If workspace is passed, we call directly the wanted style
+            '''
+            url = f"{self.service_url}/workspaces/{workspace}/styles/{name}?purge={purge}"
+        else:
+            '''
+            If is not passed, we try to get the style without passing any workspace
+            '''
+            url = f"{self.service_url}/styles/{name}?purge={purge}"
+            
+        try:
+            resp = self.http_request(url, method="DELETE")
+            if resp.status_code != 404:
+                resp.raise_for_status()
+            return resp.status_code == 201
+        except Exception as e:
+            logger.exception(e)
+            raise e
 
     def create_style(
         self,
@@ -1232,9 +1281,9 @@ class Catalog(object):
         style_format="sld10",
         raw=False,
     ):
-        styles = self.get_styles(names=name, workspaces=[workspace], recursive=True)
-        if len(styles) > 0:
-            style = styles[0]
+        styles = self.get_style(name=name, workspace=workspace, recursive=True)
+        if styles:
+            style = styles
         else:
             style = None
 
