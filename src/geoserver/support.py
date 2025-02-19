@@ -56,23 +56,25 @@ def build_url(base, seg, query=None):
         """
         Cleans the segment and encodes to UTF-8 if the segment is unicode.
         """
-        segment = segment.strip('/')
+        segment = segment.strip("/")
         if isinstance(segment, string_types):
             segment = segment
         return segment
 
     seg = (quote(clean_segment(s)) for s in seg)
     if query is None or len(query) == 0:
-        query_string = ''
+        query_string = ""
     else:
-        query_string = "?" + urlencode(query)
-    path = '/'.join(seg) + query_string
-    adjusted_base = base.rstrip('/') + '/'
+        query_string = f"?{urlencode(query)}"
+    path = "/".join(seg) + query_string
+    adjusted_base = f"{base.rstrip('/')}/"
     return urljoin(str(adjusted_base), str(path))
 
 
 def xml_property(path, converter=lambda x: x.text, default=None):
     def getter(self):
+        if hasattr(self, f"_{path}"):
+            return getattr(self, f"_{path}")
         try:
             if path in self.dirty:
                 return self.dirty[path]
@@ -81,14 +83,17 @@ def xml_property(path, converter=lambda x: x.text, default=None):
                     self.fetch()
                 node = self.dom.find(path)
                 if node is not None:
-                    return converter(self.dom.find(path))
+                    res = converter(self.dom.find(path))
+                    if issubclass(type(res), StaticResourceInfo):
+                        setattr(self, f"_{path}", res)
+                    return res
                 return default
         except Exception as e:
             raise AttributeError(e)
 
-
     def setter(self, value):
         self.dirty[path] = value
+        x = 1
 
     def delete(self):
         self.dirty[path] = None
@@ -105,7 +110,7 @@ def bbox(node):
         crs = node.find("crs")
         crs = crs.text if crs is not None else None
 
-        if (None not in [minx, maxx, miny, maxy]):
+        if None not in [minx, maxx, miny, maxy]:
             return (minx.text, maxx.text, miny.text, maxy.text, crs)
         else:
             return None
@@ -125,16 +130,31 @@ def attribute_list(node):
 
 def key_value_pairs(node):
     if node is not None:
-        return dict((entry.attrib['key'], entry.text) for entry in node.findall("entry"))
+        return dict(
+            (entry.attrib["key"], entry.text) for entry in node.findall("entry")
+        )
+
+
+def read_string(node):
+    return node.text
 
 
 def write_string(name):
     def write(builder, value):
         builder.start(name, dict())
-        if value is not None:
+        if value is not None and value:
             builder.data(value)
         builder.end(name)
+
     return write
+
+
+def read_bool(node):
+    text = node.text
+    if text:
+        return text == "true"
+    else:
+        return None
 
 
 def write_bool(name):
@@ -142,6 +162,43 @@ def write_bool(name):
         builder.start(name, dict())
         builder.data("true" if b and b != "false" else "false")
         builder.end(name)
+
+    return write
+
+
+def read_int(node):
+    text = node.text
+    try:
+        res = int(text)
+        return res
+    except Exception as e:
+        raise ValueError(e)
+
+
+def write_int(name):
+    def write(builder, b):
+        builder.start(name, dict())
+        builder.data(str(b))
+        builder.end(name)
+
+    return write
+
+
+def read_float(node):
+    text = node.text
+    try:
+        res = float(text)
+        return res
+    except Exception as e:
+        raise ValueError(e)
+
+
+def write_float(name):
+    def write(builder, b):
+        builder.start(name, dict())
+        builder.data(str(b))
+        builder.end(name)
+
     return write
 
 
@@ -150,6 +207,7 @@ def write_bbox(name):
         builder.start(name, dict())
         bbox_xml(builder, b)
         builder.end(name)
+
     return write
 
 
@@ -163,6 +221,7 @@ def write_string_list(name):
                 builder.data(w)
                 builder.end("string")
         builder.end(name)
+
     return write
 
 
@@ -170,13 +229,14 @@ def write_dict(name):
     def write(builder, pairs):
         builder.start(name, dict())
         for k, v in pairs.items():
-            if k == 'port':
+            if k == "port":
                 v = str(v)
             builder.start("entry", dict(key=k))
             v = v if isinstance(v, string_types) else str(v)
             builder.data(v)
             builder.end("entry")
         builder.end(name)
+
     return write
 
 
@@ -185,55 +245,95 @@ def write_metadata(name):
         builder.start(name, dict())
         for k, v in metadata.items():
             builder.start("entry", dict(key=k))
-            if k in ['time', 'elevation'] or k.startswith('custom_dimension'):
+            if k in ["time", "elevation"] or k.startswith("custom_dimension"):
                 dimension_info(builder, v)
-            elif k == 'DynamicDefaultValues':
+            elif k == "DynamicDefaultValues":
                 dynamic_default_values_info(builder, v)
-            elif k == 'JDBC_VIRTUAL_TABLE':
+            elif k == "JDBC_VIRTUAL_TABLE":
                 jdbc_virtual_table(builder, v)
             else:
                 builder.data(v)
             builder.end("entry")
         builder.end(name)
+
     return write
 
 
-class ResourceInfo(object):
-
+class StaticResourceInfo(object):
     def __init__(self):
+        self.write_all = True
         self.dom = None
         self.dirty = dict()
+
+    def dirty_all(self):
+        for key in self.writers.keys():
+            attr = getattr(self, key)
+            if issubclass(type(attr), StaticResourceInfo):
+                attr.dirty_all()
+            else:
+                self.dirty[key] = attr
+
+    def serialize(self, builder):
+        # GeoServer will disable the resource if we omit the <enabled> tag,
+        # so force it into the dirty dict before writing
+        if hasattr(self, "enabled"):
+            self.dirty["enabled"] = self.enabled
+
+        if hasattr(self, "advertised"):
+            self.dirty["advertised"] = self.advertised
+
+        for k, writer in self.writers.items():
+            if hasattr(self, k) and issubclass(
+                type(getattr(self, k)), StaticResourceInfo
+            ):
+                attr = getattr(self, k)
+                if attr.dirty:
+                    attr.serialize_all(builder)
+            elif k in self.dirty:
+                val = self.dirty[k]
+                writer(builder, val)
+            elif self.write_all:
+                attr = None
+            elif self.write_all and hasattr(self, k):
+                attr = getattr(self, k)
+                val = self.dirty[k] if self.dirty.get(k) else attr
+                writer(builder, val)
+
+    def serialize_all(self, builder):
+        builder.start(self.resource_type, dict())
+        self.serialize(builder)
+        builder.end(self.resource_type)
+
+    def message(self):
+        builder = TreeBuilder()
+        self.serialize_all(builder)
+        msg = tostring(builder.close())
+        return msg
+
+
+class ResourceInfo(StaticResourceInfo):
+    def __init__(self):
+        self.write_all = False
+        self.dom = None
+        self.dirty = dict()
+
+    def _clear_subclasses(self):
+        sbcs = [
+            k for k, v in vars(self).items() if issubclass(type(v), StaticResourceInfo)
+        ]
+        for sbc in sbcs:
+            delattr(self, sbc)
 
     def fetch(self):
         self.dom = self.catalog.get_xml(self.href)
 
     def clear(self):
         self.dirty = dict()
+        self._clear_subclasses()
 
     def refresh(self):
         self.clear()
         self.fetch()
-
-    def serialize(self, builder):
-        # GeoServer will disable the resource if we omit the <enabled> tag,
-        # so force it into the dirty dict before writing
-        if hasattr(self, "enabled"):
-            self.dirty['enabled'] = self.enabled
-
-        if hasattr(self, "advertised"):
-            self.dirty['advertised'] = self.advertised
-
-        for k, writer in self.writers.items():
-            if k in self.dirty:
-                writer(builder, self.dirty[k])
-
-    def message(self):
-        builder = TreeBuilder()
-        builder.start(self.resource_type, dict())
-        self.serialize(builder)
-        builder.end(self.resource_type)
-        msg = tostring(builder.close())
-        return msg
 
 
 def prepare_upload_bundle(name, data):
@@ -246,10 +346,10 @@ def prepare_upload_bundle(name, data):
     file-like objects. The client code is responsible for deleting the zip
     archive when it's done."""
     fd, path = mkstemp()
-    zip_file = ZipFile(path, 'w', allowZip64=True)
+    zip_file = ZipFile(path, "w", allowZip64=True)
     for ext, stream in data.items():
-        fname = "%s.%s" % (name, ext)
-        if (isinstance(stream, string_types)):
+        fname = f"{name}.{ext}"
+        if isinstance(stream, string_types):
             zip_file.write(stream, fname)
         else:
             zip_file.writestr(fname, stream.read())
@@ -259,20 +359,23 @@ def prepare_upload_bundle(name, data):
 
 
 def atom_link(node):
-    if 'href' in node.attrib:
-        return node.attrib['href']
+    if "href" in node.attrib:
+        return node.attrib["href"]
     else:
         link = node.find("{http://www.w3.org/2005/Atom}link")
-        return link.get('href')
+        return link.get("href")
 
 
 def atom_link_xml(builder, href):
-    builder.start("atom:link", {
-        'rel': 'alternate',
-        'href': href,
-        'type': 'application/xml',
-        'xmlns:atom': 'http://www.w3.org/2005/Atom'
-    })
+    builder.start(
+        "atom:link",
+        {
+            "rel": "alternate",
+            "href": href,
+            "type": "application/xml",
+            "xmlns:atom": "http://www.w3.org/2005/Atom",
+        },
+    )
     builder.end("atom:link")
 
 
@@ -290,7 +393,7 @@ def bbox_xml(builder, box):
     builder.start("maxy", dict())
     builder.data(str(maxy))
     builder.end("maxy")
-    if crs is not None:
+    if crs is not None and crs:
         builder.start("crs", {"class": "projected"})
         builder.data(crs)
         builder.end("crs")
@@ -303,9 +406,11 @@ def dimension_info(builder, metadata):
         builder.data("true" if metadata.enabled else "false")
         builder.end("enabled")
         if metadata.presentation is not None:
-            accepted = ['LIST', 'DISCRETE_INTERVAL', 'CONTINUOUS_INTERVAL']
+            accepted = ["LIST", "DISCRETE_INTERVAL", "CONTINUOUS_INTERVAL"]
             if metadata.presentation not in accepted:
-                raise ValueError("metadata.presentation must be one of the following %s" % accepted)
+                raise ValueError(
+                    f"metadata.presentation must be one of the following {accepted}"
+                )
             else:
                 builder.start("presentation", dict())
                 builder.data(metadata.presentation)
@@ -349,19 +454,30 @@ def dimension_info(builder, metadata):
 
 
 class DimensionInfo(object):
-
     _lookup = (
-        ('seconds', 1),
-        ('minutes', 60),
-        ('hours', 3600),
-        ('days', 86400),
+        ("seconds", 1),
+        ("minutes", 60),
+        ("hours", 3600),
+        ("days", 86400),
         # this is the number geoserver computes for 1 month
-        ('months', 2628000000),
-        ('years', 31536000000)
+        ("months", 2628000000),
+        ("years", 31536000000),
     )
 
-    def __init__(self, name, enabled, presentation, resolution, units, unitSymbol,
-                 strategy=None, attribute=None, end_attribute=None, reference_value=None, nearestMatchEnabled=None):
+    def __init__(
+        self,
+        name,
+        enabled,
+        presentation,
+        resolution,
+        units,
+        unitSymbol,
+        strategy=None,
+        attribute=None,
+        end_attribute=None,
+        reference_value=None,
+        nearestMatchEnabled=None,
+    ):
         self.name = name
         self.enabled = enabled
         self.attribute = attribute
@@ -378,21 +494,21 @@ class DimensionInfo(object):
         name = name.lower()
         found = [i[1] for i in self._lookup if i[0] == name]
         if not found:
-            raise ValueError('invalid multipler: %s' % name)
+            raise ValueError(f"invalid multipler: {name}")
         return found[0] if found else None
 
     def resolution_millis(self):
-        '''if set, get the value of resolution in milliseconds'''
+        """if set, get the value of resolution in milliseconds"""
         if self.resolution is None or not isinstance(self.resolution, string_types):
-                return self.resolution
-        val, mult = self.resolution.split(' ')
+            return self.resolution
+        val, mult = self.resolution.split(" ")
         return int(float(val) * self._multipier(mult) * 1000)
 
     def resolution_str(self):
         '''if set, get the value of resolution as "<n> <period>s", for example: "8 seconds"'''
         if self.resolution is None or isinstance(self.resolution, string_types):
             return self.resolution
-        seconds = self.resolution / 1000.
+        seconds = self.resolution / 1000.0
         biggest = self._lookup[0]
         for entry in self._lookup:
             if seconds < entry[1]:
@@ -401,30 +517,31 @@ class DimensionInfo(object):
         val = seconds / biggest[1]
         if val == int(val):
             val = int(val)
-        return '%s %s' % (val, biggest[0])
+        return f"{val} {biggest[0]}"
 
 
 def md_dimension_info(name, node):
     """Extract metadata Dimension Info from an xml node"""
-    def _get_value(child_name):
-        return getattr(node.find(child_name), 'text', None)
 
-    resolution = _get_value('resolution')
+    def _get_value(child_name):
+        return getattr(node.find(child_name), "text", None)
+
+    resolution = _get_value("resolution")
     defaultValue = node.find("defaultValue")
     strategy = defaultValue.find("strategy") if defaultValue is not None else None
     strategy = strategy.text if strategy is not None else None
     return DimensionInfo(
         name,
-        _get_value('enabled') == 'true',
-        _get_value('presentation'),
+        _get_value("enabled") == "true",
+        _get_value("presentation"),
         int(resolution) if resolution else None,
-        _get_value('units'),
-        _get_value('unitSymbol'),
+        _get_value("units"),
+        _get_value("unitSymbol"),
         strategy,
-        _get_value('attribute'),
-        _get_value('endAttribute'),
-        _get_value('referenceValue'),
-        _get_value('nearestMatchEnabled')
+        _get_value("attribute"),
+        _get_value("endAttribute"),
+        _get_value("referenceValue"),
+        _get_value("nearestMatchEnabled"),
     )
 
 
@@ -477,9 +594,17 @@ def md_dynamic_default_values_info(name, node):
             policy = n.find("policy")
             policy = policy.text if policy is not None else None
             defaultValueExpression = n.find("defaultValueExpression")
-            defaultValueExpression = defaultValueExpression.text if defaultValueExpression is not None else None
+            defaultValueExpression = (
+                defaultValueExpression.text
+                if defaultValueExpression is not None
+                else None
+            )
 
-            configurations.append(DynamicDefaultValuesConfiguration(dimension, policy, defaultValueExpression))
+            configurations.append(
+                DynamicDefaultValuesConfiguration(
+                    dimension, policy, defaultValueExpression
+                )
+            )
 
     return DynamicDefaultValues(name, configurations)
 
@@ -499,7 +624,9 @@ class JDBCVirtualTableParam(object):
 
 
 class JDBCVirtualTable(object):
-    def __init__(self, _name, _sql, _escapeSql, _geometry, _keyColumn=None, _parameters=None):
+    def __init__(
+        self, _name, _sql, _escapeSql, _geometry, _keyColumn=None, _parameters=None
+    ):
         self.name = _name
         self.sql = _sql
         self.escapeSql = _escapeSql
@@ -533,15 +660,15 @@ def jdbc_virtual_table(builder, metadata):
         if metadata.geometry is not None:
             g = metadata.geometry
             builder.start("geometry", dict())
-            if g.name is not None:
+            if g.name is not None and g.name:
                 builder.start("name", dict())
                 builder.data(g.name)
                 builder.end("name")
-            if g.type is not None:
+            if g.type is not None and g.type:
                 builder.start("type", dict())
                 builder.data(g.type)
                 builder.end("type")
-            if g.srid is not None:
+            if g.srid is not None and g.srid:
                 builder.start("srid", dict())
                 builder.data(g.srid)
                 builder.end("srid")
@@ -577,15 +704,21 @@ def md_jdbc_virtual_table(key, node):
     keyColumn = node.find("keyColumn")
     keyColumn = keyColumn.text if keyColumn is not None else None
     n_g = node.find("geometry")
-    geometry = JDBCVirtualTableGeometry(n_g.find("name"), n_g.find("type"), n_g.find("srid"))
+    geometry = JDBCVirtualTableGeometry(
+        n_g.find("name"), n_g.find("type"), n_g.find("srid")
+    )
     parameters = []
     for n_p in node.findall("parameter"):
         p_name = n_p.find("name")
         p_defaultValue = n_p.find("defaultValue")
         p_defaultValue = p_defaultValue.text if p_defaultValue is not None else None
         p_regexpValidator = n_p.find("regexpValidator")
-        p_regexpValidator = p_regexpValidator.text if p_regexpValidator is not None else None
-        parameters.append(JDBCVirtualTableParam(p_name, p_defaultValue, p_regexpValidator))
+        p_regexpValidator = (
+            p_regexpValidator.text if p_regexpValidator is not None else None
+        )
+        parameters.append(
+            JDBCVirtualTableParam(p_name, p_defaultValue, p_regexpValidator)
+        )
 
     return JDBCVirtualTable(name, sql, escapeSql, geometry, keyColumn, parameters)
 
@@ -594,16 +727,16 @@ def md_entry(node):
     """Extract metadata entries from an xml node"""
     key = None
     value = None
-    if 'key' in node.attrib:
-        key = node.attrib['key']
+    if "key" in node.attrib:
+        key = node.attrib["key"]
     else:
         key = None
 
-    if key in ['time', 'elevation'] or key.startswith('custom_dimension'):
+    if key in ["time", "elevation"] or key.startswith("custom_dimension"):
         value = md_dimension_info(key, node.find("dimensionInfo"))
-    elif key == 'DynamicDefaultValues':
+    elif key == "DynamicDefaultValues":
         value = md_dynamic_default_values_info(key, node.find("DynamicDefaultValues"))
-    elif key == 'JDBC_VIRTUAL_TABLE':
+    elif key == "JDBC_VIRTUAL_TABLE":
         value = md_jdbc_virtual_table(key, node.find("virtualTable"))
     else:
         value = node.text
@@ -649,16 +782,16 @@ def _decode_dict(data):
 
 def workspace_from_url(url):
     parts = urlparse(url)
-    split_path = parts.path.split('/')
-    if 'workspaces' in split_path:
-        return split_path[split_path.index('workspaces') + 1]
+    split_path = parts.path.split("/")
+    if "workspaces" in split_path:
+        return split_path[split_path.index("workspaces") + 1]
     else:
         return None
 
 
 def resource_from_url(url, workspace):
     parts = urlparse(url)
-    split_path = parts.path.split('/')
+    split_path = parts.path.split("/")
     if workspace in split_path:
         resource_type = split_path[split_path.index(workspace) + 1]
         return split_path[split_path.index(resource_type) + 1]

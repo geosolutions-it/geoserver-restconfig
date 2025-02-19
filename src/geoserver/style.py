@@ -19,13 +19,14 @@ except ImportError:
 
 
 class Style(ResourceInfo):
-    supported_formats = ["sld10", "sld11", "zip10", "css10"]
+    supported_formats = ["sld10", "sld11", "zip10", "css10", "sld1.0.0", "sld1.1.0"]
     content_types = {
         "sld10": "application/vnd.ogc.sld+xml",
         "sld11": "application/vnd.ogc.se+xml",
         "zip10": "application/zip",
         "css10": "application/vnd.geoserver.geocss+css",
-
+        "sld1.0.0": "application/vnd.ogc.sld+xml",
+        "sld1.1.0": "application/vnd.ogc.se+xml",
     }
 
     def __init__(self, catalog, name, workspace=None, style_format="sld10"):
@@ -43,19 +44,19 @@ class Style(ResourceInfo):
     def fqn(self):
         if not self.workspace:
             return self.name
-        return '{}:{}'.format(self.workspace, self.name)
+        return f"{self.workspace}:{self.name}"
 
     @property
     def href(self):
-        return self._build_href('.xml')
+        return self._build_href(".xml")
 
     @property
     def body_href(self):
-        return self._build_href('.sld')
+        return self._build_href(".sld")
 
     @property
     def create_href(self):
-        return self._build_href('.xml', True)
+        return self._build_href(".xml", True)
 
     @property
     def content_type(self):
@@ -67,9 +68,12 @@ class Style(ResourceInfo):
         if not create:
             path_parts.append(self.name + extension)
         else:
-            query['name'] = self.name
-        if self.workspace is not None:
-            path_parts = ["workspaces", getattr(self.workspace, 'name', self.workspace)] + path_parts
+            query["name"] = self.name
+        if self.workspace is not None and self.workspace:
+            path_parts = [
+                "workspaces",
+                getattr(self.workspace, "name", self.workspace),
+            ] + path_parts
         return build_url(self.catalog.service_url, path_parts, query)
 
     filename = xml_property("filename")
@@ -81,35 +85,56 @@ class Style(ResourceInfo):
 
     @property
     def sld_title(self):
-        user_style = self._get_sld_dom().find("{http://www.opengis.net/sld}NamedLayer/{http://www.opengis.net/sld}UserStyle")
+        named_layer = self._get_sld_dom().find("{http://www.opengis.net/sld}NamedLayer")
+        user_style = self._get_sld_dom().find(
+            "{http://www.opengis.net/sld}NamedLayer/{http://www.opengis.net/sld}UserStyle"
+        )
         if not user_style:
-            user_style = self._get_sld_dom().find("{http://www.opengis.net/sld}UserLayer/{http://www.opengis.net/sld}UserStyle")
+            user_style = self._get_sld_dom().find(
+                "{http://www.opengis.net/sld}UserLayer/{http://www.opengis.net/sld}UserStyle"
+            )
 
         title_node = None
-        if user_style:
+        if named_layer:
             try:
                 # it is not mandatory
-                title_node = user_style.find("{http://www.opengis.net/sld}Title")
+                title_node = named_layer.find("{http://www.opengis.net/sld}Title")
             except AttributeError:
                 title_node = None
+            try:
+                if not title_node:
+                    # it is not mandatory
+                    title_node = user_style.find("{http://www.opengis.net/sld}Title")
+            except AttributeError:
+                pass
 
-        return title_node.text if title_node is not None else None
+        return str(title_node.text) if title_node is not None else None
 
     @property
     def sld_name(self):
-        user_style = self._get_sld_dom().find("{http://www.opengis.net/sld}NamedLayer/{http://www.opengis.net/sld}UserStyle")
+        named_layer = self._get_sld_dom().find("{http://www.opengis.net/sld}NamedLayer")
+        user_style = self._get_sld_dom().find(
+            "{http://www.opengis.net/sld}NamedLayer/{http://www.opengis.net/sld}UserStyle"
+        )
         if not user_style:
-            user_style = self._get_sld_dom().find("{http://www.opengis.net/sld}UserLayer/{http://www.opengis.net/sld}UserStyle")
+            user_style = self._get_sld_dom().find(
+                "{http://www.opengis.net/sld}UserLayer/{http://www.opengis.net/sld}UserStyle"
+            )
 
         name_node = None
-        if user_style:
+        if named_layer:
             try:
                 # it is not mandatory
-                name_node = user_style.find("{http://www.opengis.net/sld}Name")
+                name_node = named_layer.find("{http://www.opengis.net/sld}Name")
             except AttributeError:
-                name_node = None
+                try:
+                    # it is not mandatory
+                    if user_style and not name_node:
+                        name_node = user_style.find("{http://www.opengis.net/sld}Name")
+                except AttributeError:
+                    pass
 
-        return name_node.text if name_node is not None else None
+        return str(name_node.text) if name_node is not None else None
 
     @property
     def sld_body(self):
@@ -118,11 +143,18 @@ class Style(ResourceInfo):
 
     @property
     def body(self):
-        # [:-2] remove version tag from type. GeoServer does not accept it
-        resp = self.catalog.http_request(self._build_href('.{}'.format(self.style_format[:-2])))
+        href_ext = ""
+        _headers = {}
+        if self.style_format and Style.content_types.get(self.style_format):
+            _headers = {"Accept": Style.content_types[self.style_format]}
+        else:
+            # [:-2] remove version tag from type. GeoServer does not accept it
+            href_ext = f".{self.style_format[:-2]}"
+        resp = self.catalog.http_request(self._build_href(href_ext), headers=_headers)
         return resp.content
 
     def update_body(self, body):
         headers = {"Content-Type": self.content_type}
         self.catalog.http_request(
-            self.body_href, data=body, method='put', headers=headers)
+            self.body_href, data=body, method="put", headers=headers
+        )

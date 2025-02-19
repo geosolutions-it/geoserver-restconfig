@@ -26,7 +26,7 @@ install:
   - update-alternatives --list java
   - mkdir gs
   - pushd gs
-  - wget https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-runner/9.4.7.v20170914/jetty-runner-9.4.7.v20170914.jar
+  - wget https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-runner/9.4.31.v20200723/jetty-runner-9.4.31.v20200723.jar
   - wget https://build.geoserver.org/geoserver/${GS_VERSION}/geoserver-${GS_VERSION}-latest-war.zip
   - unzip geoserver-${GS_VERSION}-latest-war.zip
   - popd
@@ -34,9 +34,9 @@ install:
   - pip install psycopg2
 before_script:
   - if [[ "$GS_VERSION" == "2.16.x" ]] || [[ "$GS_VERSION" == "2.17.x" ]] || [[ "$GS_VERSION" == "master" ]]; then
-    /usr/local/lib/jvm/openjdk11/bin/java -Xmx1024m -Dorg.eclipse.jetty.server.webapp.parentLoaderPriority=true -jar gs/jetty-runner-9.4.7.v20170914.jar --path /geoserver gs/geoserver.war > /dev/null 2>&1 &
+    /usr/local/lib/jvm/openjdk11/bin/java -Xmx1024m -Dorg.eclipse.jetty.server.webapp.parentLoaderPriority=true -jar gs/jetty-runner-9.4.31.v20200723.jar --path /geoserver gs/geoserver.war > /dev/null 2>&1 &
     else
-    /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -Xmx1024m -Dorg.eclipse.jetty.server.webapp.parentLoaderPriority=true -jar gs/jetty-runner-9.4.7.v20170914.jar --path /geoserver gs/geoserver.war > /dev/null 2>&1 &
+    /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -Xmx1024m -Dorg.eclipse.jetty.server.webapp.parentLoaderPriority=true -jar gs/jetty-runner-9.4.31.v20200723.jar --path /geoserver gs/geoserver.war > /dev/null 2>&1 &
     fi
   - psql -U postgres -c "create extension postgis"
   - psql -U postgres -c "create database db;"
